@@ -105,14 +105,18 @@ class MetricsEngine:
         all_findings = []
 
         # 1. Flake8
-        exclude_list = ",".join(
-            self.config.get("exclusions", {}).get("directories", [])
-        )
+        exclude_list = ",".join(self.config.get("exclusions", {}).get("directories", []))
+        ignore_list = ",".join(self.config.get("flake8", {}).get("ignore", []))
+        ignore_arg = f"--ignore={ignore_list}" if ignore_list else ""
+
         for d in scan_dirs:
             if os.path.isdir(d):
-                flake8_cmd = f"flake8 --max-complexity=10 --exclude={exclude_list} {d}"
+                flake8_cmd = (
+                    f"flake8 --max-complexity=10 --exclude={exclude_list} {ignore_arg} {d}"
+                )
                 stdout, _ = CommandRunner.run(flake8_cmd)
                 all_findings.extend(self.flake8_parser.parse(stdout))
+
 
         # 2. Generic Metrics
         for d in scan_dirs:
