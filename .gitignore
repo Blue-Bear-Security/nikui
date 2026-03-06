@@ -8,9 +8,6 @@ env/
 
 # Project Specific
 .nikui_tmp/
-analysis_report.json
-analysis_report.html
-analysis_report.md
 
 # OS
 .DS_Store
