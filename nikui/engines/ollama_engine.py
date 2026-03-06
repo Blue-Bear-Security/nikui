@@ -5,6 +5,7 @@ import random
 import requests
 import sys
 
+
 class OllamaClient:
     def __init__(self, model):
         self.model = model
@@ -15,7 +16,10 @@ class OllamaClient:
             response = requests.get("http://localhost:11434", timeout=2)
             return response.status_code == 200
         except requests.exceptions.ConnectionError:
-            print("Warning: Ollama service is not reachable (connection refused).", file=sys.stderr)
+            print(
+                "Warning: Ollama service is not reachable (connection refused).",
+                file=sys.stderr,
+            )
             return False
         except Exception as e:
             print(f"Warning: Unexpected error checking Ollama: {e}", file=sys.stderr)
@@ -24,15 +28,16 @@ class OllamaClient:
     def generate(self, prompt):
         try:
             response = requests.post(
-                self.url, 
-                json={"model": self.model, "prompt": prompt, "stream": False}, 
-                timeout=120
+                self.url,
+                json={"model": self.model, "prompt": prompt, "stream": False},
+                timeout=120,
             )
             response.raise_for_status()
             return response.json().get("response", "")
         except Exception as e:
             print(f"Error during Ollama API request: {e}", file=sys.stderr)
             return ""
+
 
 class PromptLoader:
     @staticmethod
@@ -46,6 +51,7 @@ class PromptLoader:
         except Exception as e:
             print(f"Error loading prompt: {e}", file=sys.stderr)
             return None
+
 
 class OllamaEngine:
     def __init__(self, config, script_dir, project_root):
@@ -67,26 +73,29 @@ class OllamaEngine:
 
         prompt = PromptLoader.load(prompt_path, file_path, code)
         if not prompt:
-            print(f"Error: Prompt template not found or invalid at {prompt_path}", file=sys.stderr)
+            print(
+                f"Error: Prompt template not found or invalid at {prompt_path}",
+                file=sys.stderr,
+            )
             return []
 
         raw_output = self.client.generate(prompt)
         if not raw_output:
             return []
-            
+
         return self._parse_output(file_path, raw_output)
 
     def _parse_output(self, file_path, raw_output):
         findings = []
         json_array_regex = r"\[\s*(?:\{.*?\}(?:,\s*\{.*?\})*)?\s*\]"
         matches = re.finditer(json_array_regex, raw_output, re.DOTALL)
-        
+
         category_map = {
             "Deep Nesting": "Code Quality & Maintainability",
             "Poor Naming": "Best Practices & Conventions",
             "Violations of SOLID principles": "Architectural & Design Flaw",
             "God Objects / Shotgun Surgery": "Architectural & Design Flaw",
-            "Improper Error Handling & Silent Failures": "Improper Error Handling & Silent Failures"
+            "Improper Error Handling & Silent Failures": "Improper Error Handling & Silent Failures",
         }
 
         for match in matches:
@@ -94,17 +103,24 @@ class OllamaEngine:
                 file_findings = json.loads(match.group(0))
                 if isinstance(file_findings, list):
                     for fnd in file_findings:
-                        findings.append({
-                            "tool": "Ollama",
-                            "file_path": file_path,
-                            "line": None,
-                            "category": category_map.get(fnd.get("category"), "Code Quality & Maintainability"),
-                            "severity": fnd.get("severity", "Medium"),
-                            "description": fnd.get("description", "")
-                        })
+                        findings.append(
+                            {
+                                "tool": "Ollama",
+                                "file_path": file_path,
+                                "line": None,
+                                "category": category_map.get(
+                                    fnd.get("category"),
+                                    "Code Quality & Maintainability",
+                                ),
+                                "severity": fnd.get("severity", "Medium"),
+                                "description": fnd.get("description", ""),
+                            }
+                        )
                     return findings
             except Exception as e:
-                print(f"Error parsing Ollama result for {file_path}: {e}", file=sys.stderr)
+                print(
+                    f"Error parsing Ollama result for {file_path}: {e}", file=sys.stderr
+                )
                 continue
         return findings
 
@@ -114,18 +130,25 @@ class OllamaEngine:
             print("⚠️  Ollama not running. Skipping stage.", file=sys.stderr)
             return []
 
-        sample_size = max(1, int(len(eligible_files) * self.sampling_rate)) if eligible_files else 0
+        sample_size = (
+            max(1, int(len(eligible_files) * self.sampling_rate))
+            if eligible_files
+            else 0
+        )
         sampled_files = random.sample(eligible_files, sample_size)
-        
-        print(f"Analyzing {sample_size} files ({self.sampling_rate*100}% sample of {len(eligible_files)} total)...", file=sys.stderr)
-        
+
+        print(
+            f"Analyzing {sample_size} files ({self.sampling_rate*100}% sample of {len(eligible_files)} total)...",
+            file=sys.stderr,
+        )
+
         all_findings = []
         prompt_path = os.path.join(self.project_root, "prompt.md")
-        
+
         for i, p in enumerate(sampled_files):
             sys.stderr.write(f"\rProgress: [{i+1}/{sample_size}] files analyzed...")
             sys.stderr.flush()
             all_findings.extend(self.analyze_file(p, prompt_path))
-            
+
         print("", file=sys.stderr)
         return all_findings
