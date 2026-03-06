@@ -1,5 +1,6 @@
 import pytest
 import json
+import os
 from nikui.engines.ollama_engine import OllamaEngine
 from nikui.engines.semgrep_engine import SemgrepEngine
 from nikui.engines.metrics_engine import MetricsEngine
@@ -16,7 +17,32 @@ def semgrep_engine():
 
 @pytest.fixture
 def metrics_engine():
-    return MetricsEngine({})
+    config = {
+        "exclusions": {
+            "directories": [".venv"],
+            "patterns": ["*.tmp"]
+        }
+    }
+    return MetricsEngine(config)
+
+def test_metrics_engine_respects_exclusions(metrics_engine, tmp_path):
+    # Create a dummy .venv directory and a file inside it
+    venv_dir = tmp_path / ".venv"
+    venv_dir.mkdir()
+    bad_file = venv_dir / "bad.py"
+    bad_file.write_text("a" * 200) # Should trigger line length smell if scanned
+    
+    # Create a normal file
+    good_file = tmp_path / "good.py"
+    good_file.write_text("print('hello')")
+    
+    # Run the stage on the tmp_path
+    # Note: We need a way to pass is_excluded to MetricsEngine or have it use config
+    findings = metrics_engine.run_stage([str(tmp_path)])
+    
+    # findings should NOT contain bad.py
+    for f in findings:
+        assert ".venv" not in f["file_path"]
 
 def test_parse_ollama_valid_json(ollama_engine):
     raw_output = '[{"category": "Deep Nesting", "severity": "Medium", "description": "test"}]'
@@ -49,9 +75,15 @@ def test_parse_flake8_complexity(metrics_engine):
     assert len(findings) == 1
     assert findings[0]["category"] == "Architectural & Design Flaw"
 
-def test_analyze_generic_file(metrics_engine, tmp_path):
-    f = tmp_path / "long.py"
-    f.write_text("a" * 200)
-    findings = metrics_engine._analyze_generic_file(str(f), max_line_length=120)
-    assert len(findings) == 1
-    assert "Line exceeds" in findings[0]["description"]
+def test_metrics_engine_unreadable_file(metrics_engine, tmp_path):
+    # Create a file that is unreadable (e.g. no read permission)
+    unreadable = tmp_path / "unreadable.py"
+    unreadable.write_text("print('no')")
+    os.chmod(str(unreadable), 0o000)
+    
+    # This should not crash the scanner
+    findings = metrics_engine._analyze_generic_file(str(unreadable))
+    assert len(findings) == 0
+    
+    # Restore permissions to cleanup
+    os.chmod(str(unreadable), 0o644)

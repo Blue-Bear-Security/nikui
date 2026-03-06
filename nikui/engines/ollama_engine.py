@@ -2,7 +2,6 @@ import os
 import re
 import json
 import random
-import shlex
 import requests
 import sys
 
@@ -87,7 +86,9 @@ class OllamaEngine:
                             "description": fnd.get("description", "")
                         })
                     return findings
-            except: continue
+            except Exception as e:
+                print(f"Error parsing Ollama result for {file_path}: {e}", file=sys.stderr)
+                continue
         return findings
 
     def run_stage(self, eligible_files):

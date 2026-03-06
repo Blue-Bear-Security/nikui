@@ -1,15 +1,10 @@
 import argparse
 import json
-import subprocess
 import sys
 import os
-import re
-import random
-import fnmatch
-import shlex
-import requests
 import time
 
+from nikui.utils import is_excluded
 from nikui.engines.ollama_engine import OllamaEngine
 from nikui.engines.semgrep_engine import SemgrepEngine
 from nikui.engines.metrics_engine import MetricsEngine
@@ -17,15 +12,6 @@ from nikui.engines.metrics_engine import MetricsEngine
 def load_config(config_path):
     if not os.path.exists(config_path): print(f"Error: {config_path} not found."); sys.exit(1)
     with open(config_path, "r", encoding="utf-8") as f: return json.load(f)
-
-def is_excluded(filepath, config):
-    norm_path = os.path.normpath(filepath)
-    parts = norm_path.split(os.sep)
-    for d in config["exclusions"]["directories"]:
-        if d in parts: return True
-    for p in config["exclusions"]["patterns"]:
-        if fnmatch.fnmatch(norm_path, p) or fnmatch.fnmatch(os.path.basename(norm_path), p): return True
-    return False
 
 def main():
     parser = argparse.ArgumentParser(prog="nikui")

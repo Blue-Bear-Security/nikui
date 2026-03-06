@@ -24,7 +24,8 @@ def get_git_metadata(file_path):
         commit_count = int(subprocess.check_output(f'git rev-list --count HEAD -- {quoted_path}', shell=True).decode().strip())
         last_mod = int(subprocess.check_output(f'git log -1 --format=%ct -- {quoted_path}', shell=True).decode().strip())
         return commit_count, last_mod
-    except: return 1, int(time.time())
+    except Exception as e:
+        return 1, int(time.time())
 
 def generate_html_report(json_path, html_path, sorted_files, findings, config):
     findings_by_file = defaultdict(list)
