@@ -5,14 +5,10 @@ import random
 import requests
 import sys
 
-class OllamaEngine:
-    def __init__(self, config, script_dir, project_root):
-        self.config = config
-        self.script_dir = script_dir
-        self.project_root = project_root
-        self.model = config.get("ollama", {}).get("model", "qwen2.5-coder:7b")
+class OllamaClient:
+    def __init__(self, model):
+        self.model = model
         self.url = "http://localhost:11434/api/generate"
-        self.sampling_rate = config.get("ollama", {}).get("sampling_rate", 0.01)
 
     def is_running(self):
         try:
@@ -25,12 +21,40 @@ class OllamaEngine:
             print(f"Warning: Unexpected error checking Ollama: {e}", file=sys.stderr)
             return False
 
-    def _load_prompt(self, prompt_path, filename, code):
+    def generate(self, prompt):
+        try:
+            response = requests.post(
+                self.url, 
+                json={"model": self.model, "prompt": prompt, "stream": False}, 
+                timeout=120
+            )
+            response.raise_for_status()
+            return response.json().get("response", "")
+        except Exception as e:
+            print(f"Error during Ollama API request: {e}", file=sys.stderr)
+            return ""
+
+class PromptLoader:
+    @staticmethod
+    def load(prompt_path, filename, code):
         if not os.path.exists(prompt_path):
             return None
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            template = f.read()
-        return template.format(filename=filename, code=code)
+        try:
+            with open(prompt_path, "r", encoding="utf-8") as f:
+                template = f.read()
+            return template.format(filename=filename, code=code)
+        except Exception as e:
+            print(f"Error loading prompt: {e}", file=sys.stderr)
+            return None
+
+class OllamaEngine:
+    def __init__(self, config, script_dir, project_root):
+        self.config = config
+        self.script_dir = script_dir
+        self.project_root = project_root
+        self.model = config.get("ollama", {}).get("model", "qwen2.5-coder:7b")
+        self.sampling_rate = config.get("ollama", {}).get("sampling_rate", 0.01)
+        self.client = OllamaClient(self.model)
 
     def analyze_file(self, file_path, prompt_path):
         """Analyzes a single file using the LLM."""
@@ -41,23 +65,16 @@ class OllamaEngine:
             print(f"Error reading file {file_path}: {e}", file=sys.stderr)
             return []
 
-        prompt = self._load_prompt(prompt_path, file_path, code)
+        prompt = PromptLoader.load(prompt_path, file_path, code)
         if not prompt:
-            print(f"Error: Prompt template not found at {prompt_path}", file=sys.stderr)
+            print(f"Error: Prompt template not found or invalid at {prompt_path}", file=sys.stderr)
             return []
 
-        try:
-            response = requests.post(
-                self.url, 
-                json={"model": self.model, "prompt": prompt, "stream": False}, 
-                timeout=120
-            )
-            response.raise_for_status()
-            raw_output = response.json().get("response", "")
-            return self._parse_output(file_path, raw_output)
-        except Exception as e:
-            print(f"Error during Ollama analysis for {file_path}: {e}", file=sys.stderr)
+        raw_output = self.client.generate(prompt)
+        if not raw_output:
             return []
+            
+        return self._parse_output(file_path, raw_output)
 
     def _parse_output(self, file_path, raw_output):
         findings = []
@@ -93,7 +110,7 @@ class OllamaEngine:
 
     def run_stage(self, eligible_files):
         """Orchestrates the LLM stage for a list of files."""
-        if not self.is_running():
+        if not self.client.is_running():
             print("⚠️  Ollama not running. Skipping stage.", file=sys.stderr)
             return []
 
