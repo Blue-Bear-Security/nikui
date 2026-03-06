@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nikui Hotspot Report</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #f9fafb; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .calc-box { background: #f8fafc; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 30px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f3f4f6; cursor: pointer; }
+        .findings-row { display: none; background: #fafafa; }
+        .findings-row.active { display: table-row; }
+        .badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .badge-high { background: #fee2e2; color: #991b1b; }
+        .badge-medium { background: #fef3c7; color: #92400e; }
+        .badge-low { background: #dcfce3; color: #166534; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔥 Nikui Hotspot Report</h1>
+    <div class="calc-box">
+        <h3>🧮 Stench Calculation</h3>
+        <p>Weights: {{weights}}</p>
+    </div>
+    <table id="hotspotTable">
+        <thead>
+            <tr>
+                <th>File Path</th>
+                <th>Hotspot Score</th>
+                <th>Stench</th>
+                <th>Findings</th>
+                <th>Churn</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{table_rows}}
+        </tbody>
+    </table>
+</div>
+<script>
+    function toggleFindings(i){
+        const r = document.getElementById('findings-' + i);
+        if (r) r.classList.toggle('active');
+    }
+</script>
+</body>
+</html>

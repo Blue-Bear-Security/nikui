@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+.venv/
+venv/
+env/
+
+# Project Specific
+.nikui_tmp/
+analysis_report.json
+analysis_report.html
+analysis_report.md
+
+# OS
+.DS_Store
+
+# Tools
+.vscode/
+.idea/
