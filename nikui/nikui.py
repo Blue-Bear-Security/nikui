@@ -14,7 +14,12 @@ def is_ollama_running():
     try:
         response = requests.get("http://localhost:11434", timeout=2)
         return response.status_code == 200
-    except: return False
+    except requests.exceptions.ConnectionError:
+        print("Warning: Ollama service is not reachable (connection refused).", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"Warning: Unexpected error checking Ollama: {e}", file=sys.stderr)
+        return False
 
 def load_config(config_path):
     if not os.path.exists(config_path): print(f"Error: {config_path} not found."); sys.exit(1)
