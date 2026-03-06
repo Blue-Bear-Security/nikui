@@ -1,0 +1,15 @@
+[project]
+name = "nikui"
+version = "1.0.1"
+description = "A bear-powered code smell and technical debt analyzer with hotspot prioritization."
+authors = [
+    { name = "amirshk" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "requests>=2.31.0",
+    "flake8>=7.0.0",
+]
+
+[project.scripts]
+nikui = "src.nikui:main"
