@@ -37,12 +37,13 @@ uv sync
 
 ### 2. Create Your Config
 
-Copy the example config and edit it to match your setup:
+To customize Nikui for a repo, create a `.nikui/config.json` inside it:
 ```bash
-cp examples/config.json config.json
+mkdir .nikui
+cp /path/to/nikui/examples/config.json .nikui/config.json
 ```
 
-Nikui will automatically use `config.json` from the current directory, or fall back to the bundled defaults if none is found.
+Nikui looks for `.nikui/config.json` in the target repo and falls back to sensible bundled defaults if none is found.
 
 ### 3. Configure an LLM Backend
 

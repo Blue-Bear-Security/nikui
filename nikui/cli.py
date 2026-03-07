@@ -15,7 +15,7 @@ def main():
     smell_parser = subparsers.add_parser("smell", help="Execute the code smell scan")
     smell_parser.add_argument("repo_path", help="Path to the repository to analyze")
     smell_parser.add_argument(
-        "--config", default="config.json", help="Path to config file"
+        "--config", default=".nikui/config.json", help="Path to config file (default: .nikui/config.json in target repo)"
     )
     smell_parser.add_argument(
         "--output",
@@ -41,7 +41,7 @@ def main():
     )
     report_parser.add_argument("--html", default=None, help="Output HTML report file")
     report_parser.add_argument(
-        "--config", default="config.json", help="Path to config file"
+        "--config", default=".nikui/config.json", help="Path to config file (default: .nikui/config.json in target repo)"
     )
 
     args = parser.parse_args()

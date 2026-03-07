@@ -24,7 +24,7 @@ def load_config(config_path):
 def main():
     parser = argparse.ArgumentParser(prog="nikui")
     parser.add_argument("repo_path")
-    parser.add_argument("--config", default="config.json")
+    parser.add_argument("--config", default=".nikui/config.json")
     parser.add_argument("--output", default="analysis_report.json")
     parser.add_argument(
         "--stages",
