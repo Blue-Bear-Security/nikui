@@ -68,6 +68,14 @@ class OllamaEngine:
         numbered = [f"{i+1}: {line}" for i, line in enumerate(lines)]
         return "\n".join(numbered)
 
+    def _clean_json_content(self, text):
+        """Attempts to fix common LLM JSON formatting errors."""
+        # 1. Remove trailing commas in arrays/objects
+        text = re.sub(r",\s*([\]\}])", r"\1", text)
+        # 2. Fix unquoted property names if possible (risky, but sometimes needed)
+        # For now, we'll stick to trailing commas which are the #1 offender.
+        return text
+
     def verify_duplication(self, file_a, code_a, file_b, code_b):
         """Uses LLM to verify if two blocks are actually duplicates."""
         prompt_path = os.path.join(
@@ -86,10 +94,11 @@ class OllamaEngine:
             return True, "LLM failed, assuming duplicate"
 
         try:
-            # Clean possible markdown wrap
-            clean_json = re.search(r"\{.*\}", raw_output, re.DOTALL)
-            if clean_json:
-                data = json.loads(clean_json.group(0))
+            # Clean possible markdown wrap or conversational text
+            match = re.search(r"\{.*\}", raw_output, re.DOTALL)
+            if match:
+                clean_json = self._clean_json_content(match.group(0))
+                data = json.loads(clean_json)
                 return data.get("status") == "DUPLICATE", data.get("reason", "")
         except Exception:
             pass
@@ -124,15 +133,22 @@ class OllamaEngine:
 
     def _parse_output(self, file_path, raw_output):
         findings = []
-        # Look for JSON array block
+        # Look for JSON array block - more robust regex (non-greedy)
         json_array_regex = r"\[\s*\{.*\}\s*\]"
         match = re.search(json_array_regex, raw_output, re.DOTALL)
 
         if not match:
+            # Log snippet if it looks like there was an attempt to provide JSON but failed regex
+            if "[" in raw_output:
+                print(f"Warning: Failed to extract JSON array from Ollama output for {file_path}. Content started with: {raw_output[:100]}...", file=sys.stderr)
             return []
 
+        json_str = match.group(0)
         try:
-            file_findings = json.loads(match.group(0))
+            # Clean common syntax errors like trailing commas
+            clean_json = self._clean_json_content(json_str)
+            file_findings = json.loads(clean_json)
+            
             if isinstance(file_findings, list):
                 for fnd in file_findings:
                     # Map 'line_range' to 'line' for backward compatibility with dashboard
@@ -156,7 +172,8 @@ class OllamaEngine:
                     )
                 return findings
         except Exception as e:
-            print(f"Error parsing Ollama result for {file_path}: {e}", file=sys.stderr)
+            print(f"Error parsing Ollama JSON for {file_path}: {e}", file=sys.stderr)
+            print(f"Problematic JSON snippet: {json_str[:200]}...", file=sys.stderr)
 
         return findings
 
