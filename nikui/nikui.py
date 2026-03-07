@@ -14,8 +14,9 @@ from nikui.engines.dependency_engine import DependencyEngine
 
 def load_config(config_path):
     if not os.path.exists(config_path):
-        print(f"Error: {config_path} not found.")
-        sys.exit(1)
+        bundled = os.path.join(os.path.dirname(__file__), "default_config.json")
+        print(f"Warning: {config_path} not found. Using bundled default config.", file=sys.stderr)
+        config_path = bundled
     with open(config_path, "r", encoding="utf-8") as f:
         return json.load(f)
 

@@ -35,7 +35,16 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 ```
 
-### 2. Configure an LLM Backend
+### 2. Create Your Config
+
+Copy the example config and edit it to match your setup:
+```bash
+cp examples/config.json config.json
+```
+
+Nikui will automatically use `config.json` from the current directory, or fall back to the bundled defaults if none is found.
+
+### 3. Configure an LLM Backend
 
 Nikui works with any **OpenAI-compatible** LLM server. Set `base_url` and `model` in `config.json`.
 

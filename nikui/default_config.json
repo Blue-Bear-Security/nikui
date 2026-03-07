@@ -1,0 +1,29 @@
+{
+  "exclusions": {
+    "patterns": ["*/tests/*", "*/test/*", "test_*.py", "*.test.js", "*.test.ts", "*.test.tsx", "*_test.go"],
+    "directories": ["node_modules", ".git", ".venv", "venv", "dist", "build", "tests", "test", "__pycache__", ".next"]
+  },
+  "ollama": {
+    "base_url": "http://localhost:11434/v1",
+    "model": "qwen2.5-coder:7b",
+    "sampling_rate": 1.0,
+    "workers": 2
+  },
+  "semgrep": {
+    "configs": ["p/security-audit", "p/secrets", "p/best-practices", "p/owasp-top-10"]
+  },
+  "flake8": {
+    "ignore": ["E501", "W293", "W291"]
+  },
+  "duplication": {
+    "threshold": 0.85,
+    "min_lines": 12
+  },
+  "stench_weights": {
+    "Security Vulnerability": 50,
+    "Improper Error Handling & Silent Failures": 30,
+    "Architectural & Design Flaw": 20,
+    "Code Quality & Maintainability": 5,
+    "Best Practices & Conventions": 2
+  }
+}
