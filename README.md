@@ -14,7 +14,7 @@
 See [`examples/`](examples/) for a real scan of the Nikui codebase itself:
 - [`nikui_self_scan.json`](examples/nikui_self_scan.json) — raw findings
 - [`nikui_self_scan.html`](examples/nikui_self_scan.html) — interactive report
-- [`config.json`](examples/config.json) — config used for the scan (MLX, Qwen2.5-Coder-14B)
+- [`config.json`](examples/config.json) — config used for the scan (Ollama, Qwen2.5-Coder-7B)
 
 ## Features
 
