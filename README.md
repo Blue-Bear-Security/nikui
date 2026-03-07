@@ -5,7 +5,7 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/Blue-Bear-Security/nikui/test.yml?label=tests)](https://github.com/Blue-Bear-Security/nikui/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-<!-- demo.gif -->
+![Nikui Demo](demo.gif)
 
 **Nikui** is a code smell and technical debt analyzer. It scans a repository and produces a prioritized hotspot report by combining LLM semantic analysis, static security scanning, structural duplication detection, and objective code metrics.
 
