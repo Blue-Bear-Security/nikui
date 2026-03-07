@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nikui Hotspot Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text: #111827;
+            --border: #e5e7eb;
+            --primary: #3b82f6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #111827;
+                --card-bg: #1f2937;
+                --text: #f9fafb;
+                --border: #374151;
+            }
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: var(--bg); color: var(--text); line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* Header & Stats */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-card h3 { margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-card p { margin: 5px 0 0; font-size: 24px; font-weight: bold; }
+
+        /* Chart Section */
+        .chart-container { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; height: 400px; }
+
+        /* Controls */
+        .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+        .filter-row { display: flex; gap: 15px; align-items: center; }
+        #searchInput { flex-grow: 1; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: 14px; }
+        
+        .pill-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+        .pill { padding: 4px 12px; border-radius: 9999px; background: var(--card-bg); border: 1px solid var(--border); font-size: 12px; cursor: pointer; transition: all 0.2s; }
+        .pill:hover { border-color: var(--primary); color: var(--primary); }
+        .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Table */
+        .table-wrapper { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f3f4f6; padding: 12px 15px; font-size: 11px; font-weight: 600; text-transform: uppercase; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.2s; }
+        th:hover { background: #e5e7eb; }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        tr.file-row:hover { background: rgba(59, 130, 246, 0.05); cursor: pointer; }
+        
+        @media (prefers-color-scheme: dark) {
+            th { background: #374151; color: #9ca3af; }
+            th:hover { background: #4b5563; }
+        }
+
+        /* Expandable Content */
+        .findings-row { display: none; background: rgba(0,0,0,0.02); }
+        .findings-row.active { display: table-row; }
+        .findings-content { padding: 20px; border-left: 4px solid var(--primary); margin: 10px 20px; background: var(--card-bg); border-radius: 0 8px 8px 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        .finding-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .finding-item:last-child { border-bottom: none; }
+
+        /* Badges */
+        .badge { padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+        .badge-high { background: #fee2e2; color: #b91c1c; }
+        .badge-medium { background: #fef3c7; color: #b45309; }
+        .badge-low { background: #d1fae5; color: #047857; }
+        .badge-tool { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        
+        .score-hot { color: var(--danger); font-weight: 800; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>🐻 Nikui Bear Dashboard</h1>
+        <div class="pill active">2026-03-07 17:30:25</div>
+    </header>
+
+    <div class="stats-grid">
+        <div class="stat-card"><h3>Target Files</h3><p>8</p></div>
+        <div class="stat-card"><h3>Total Debt</h3><p>105</p></div>
+        <div class="stat-card"><h3>Max Hotspot</h3><p class="score-hot">5376</p></div>
+        <div class="stat-card"><h3>Avg Churn</h3><p>8.9</p></div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="hotspotChart"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="filter-row">
+            <input type="text" id="searchInput" placeholder="Filter by file path (e.g. 'auth', 'api')..." onkeyup="updateFilters()">
+        </div>
+        <div class="pill-filters">
+            <span class="pill active" onclick="toggleToolFilter(this, 'all')">All Tools</span>
+            <span class="pill" onclick="toggleToolFilter(this, 'Ollama')">Ollama</span>
+            <span class="pill" onclick="toggleToolFilter(this, 'Semgrep')">Semgrep</span>
+            <span class="pill" onclick="toggleToolFilter(this, 'Duplication')">Duplication</span>
+            <span class="pill" onclick="toggleToolFilter(this, 'DependencyEngine')">Dependency</span>
+            <span class="pill" onclick="toggleToolFilter(this, 'Flake8')">Flake8</span>
+            <span class="pill" onclick="toggleToolFilter(this, 'GenericMetrics')">Metrics</span>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="hotspotTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">File Path</th>
+                    <th onclick="sortTable(1)">🔥 Hotspot</th>
+                    <th onclick="sortTable(2)">Stench</th>
+                    <th onclick="sortTable(3)">Findings</th>
+                    <th onclick="sortTable(4)">Churn</th>
+                    <th onclick="sortTable(5)">Debt Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr onclick="toggleFindings(0)" class="file-row"><td>./nikui/engines/ollama_engine.py</td><td><strong>5376</strong></td><td>448</td><td>13</td><td>12</td><td>🔥 Toxic</td></tr><tr id="findings-0" class="findings-row"><td colspan="6"><div class="findings-content"><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: Variable name 'fnd' is not descriptive.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: Function 'run_stage' has 5 parameters.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Functions</strong>: Function 'run_stage' is 36 lines long.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Prints a warning without logging or handling the exception.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Prints a warning without logging or handling the exception.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Prints an error message without logging or handling the exception.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Prints an error message without logging or handling the exception.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Passes silently without logging or handling the exception.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Prints an error message without logging or handling the exception.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Prints a warning without logging or handling the exception.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">MaintainabilityIndex</span> <strong>Code Quality & Maintainability</strong>: Low Maintainability Index (26.3/100). Consider refactoring to reduce complexity.</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [E226] missing whitespace around arithmetic operator</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [E226] missing whitespace around arithmetic operator</div></div></td></tr><tr onclick="toggleFindings(1)" class="file-row"><td>./nikui/engines/duplication_engine.py</td><td><strong>1800</strong></td><td>200</td><td>16</td><td>9</td><td>🔥 Toxic</td></tr><tr id="findings-1" class="findings-row"><td colspan="6"><div class="findings-content"><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: Function name 'run_stage' is generic and does not clearly convey its responsibility.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: Constructor takes multiple parameters which could be encapsulated into a config object.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: Hardcoded shingle size of 4 without a named constant.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: Hardcoded similarity threshold calculation without a named constant.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: Hardcoded similarity threshold of 0.85 without a named constant.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: Hardcoded similarity threshold of 98 without a named constant.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Deep Nesting</strong>: Nested loops and conditionals make the code hard to read and maintain.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Empty except block that hides file reading errors.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Empty except block that hides AST parsing errors.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Long Functions</strong>: Function 'run_stage' is long and complex, exceeding 50 lines.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">MaintainabilityIndex</span> <strong>Code Quality & Maintainability</strong>: Low Maintainability Index (23.0/100). Consider refactoring to reduce complexity.</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [E203] whitespace before ':'</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [E203] whitespace before ':'</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Architectural & Design Flaw</strong>: [C901] 'DuplicationEngine.run_stage' is too complex (15)</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [E226] missing whitespace around arithmetic operator</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [E226] missing whitespace around arithmetic operator</div></div></td></tr><tr onclick="toggleFindings(2)" class="file-row"><td>./nikui/generate_report.py</td><td><strong>1566</strong></td><td>120</td><td>12</td><td>13</td><td>⚡ Quick Win</td></tr><tr id="findings-2" class="findings-row"><td colspan="6"><div class="findings-content"><div class="finding-item"><span class="badge badge-high">High</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: The `except` block in `get_git_metadata` catches all exceptions and returns default values without logging the error, which can hide issues and make debugging difficult.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: The variable name `config` in the `__init__` method of `HotspotCalculator` is generic and does not convey its purpose clearly.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: The variable name `config` in the `__init__` method of `HtmlReporter` is generic and does not convey its purpose clearly.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: The `generate_reports` function has 4 parameters, which is slightly above the recommended limit and could benefit from a configuration object.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: The hardcoded values `3.0`, `2.0`, `1.0`, and `1.5` in the `multipliers` dictionary are domain-specific and should be named constants for better readability.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: The hardcoded value `1` in the `multipliers` dictionary is domain-specific and should be named constants for better readability.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Deep Nesting</strong>: The `for` loop inside `calculate_stench` is nested within another `for` loop, resulting in deep nesting that can reduce readability and maintainability.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Deep Nesting</strong>: The `for` loop inside `score_hotspots` is nested within another `for` loop, resulting in deep nesting that can reduce readability and maintainability.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Deep Nesting</strong>: The `for` loop inside `render` is nested within another `for` loop, resulting in deep nesting that can reduce readability and maintainability.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Long Functions</strong>: The `generate_reports` function is 48 lines long and performs multiple responsibilities, which can make it difficult to understand and maintain.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">MaintainabilityIndex</span> <strong>Code Quality & Maintainability</strong>: Low Maintainability Index (24.9/100). Consider refactoring to reduce complexity.</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [F841] local variable 'current_time' is assigned to but never used</div></div></td></tr><tr onclick="toggleFindings(3)" class="file-row"><td>./nikui/nikui.py</td><td><strong>1162</strong></td><td>83</td><td>12</td><td>14</td><td>⚡ Quick Win</td></tr><tr id="findings-3" class="findings-row"><td colspan="6"><div class="findings-content"><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: The function name 'load_config' is generic and does not clearly convey its purpose of loading a configuration file.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: The error handling for missing configuration files does not provide detailed logging or alerting.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Resource Management & Security</strong>: No hardcoded secrets or sensitive information are found in the code.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: The tuple of valid file extensions is hardcoded without a named constant.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: No functions or constructors with 5 or more parameters are found in the code.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Duplicate Code / DRY Violations</strong>: The OllamaEngine is instantiated twice with the same parameters, which could be extracted into a shared function.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Deep Nesting</strong>: The nested loop and conditional logic within the os.walk() block is deeply nested, making the code harder to read and maintain.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>SOLID Violations (Primarily SRP)</strong>: The main() function performs multiple distinct responsibilities, including argument parsing, configuration loading, file traversal, and running multiple analysis stages.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>God Objects / Shotgun Surgery</strong>: The main() function handles multiple unrelated concerns, such as argument parsing, configuration management, file traversal, and running different analysis engines.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Long Functions</strong>: The main() function is excessively long, spanning approximately 95 lines, which makes it difficult to read and maintain.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">MaintainabilityIndex</span> <strong>Code Quality & Maintainability</strong>: Low Maintainability Index (36.6/100). Consider refactoring to reduce complexity.</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Architectural & Design Flaw</strong>: [C901] 'main' is too complex (12)</div></div></td></tr><tr onclick="toggleFindings(4)" class="file-row"><td>./nikui/engines/metrics_engine.py</td><td><strong>985</strong></td><td>109</td><td>15</td><td>9</td><td>⚡ Quick Win</td></tr><tr id="findings-4" class="findings-row"><td colspan="6"><div class="findings-content"><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: Variable name 'config' is too generic and does not convey its purpose.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Resource Management & Security</strong>: Subprocess.run is used without ensuring proper resource management.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: Hardcoded string ':latest' in regex pattern without explanation.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: scan method has 4 parameters, which could be encapsulated into a data class.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Dead Code</strong>: Break statement in scan_lines method prevents further line length checks after the first long line.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: Variable name 'config' is too generic and does not convey its purpose.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">GenericMetrics</span> <strong>Code Quality & Maintainability</strong>: Line exceeds 120 characters.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Deep Nesting</strong>: Nested loops and conditionals inside a loop (lines 80-84) increase complexity.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>SOLID Violations (Primarily SRP)</strong>: MetricsEngine class has multiple responsibilities: running stages, handling file reading, and invoking different scanners.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Error handling in file reading does not provide detailed logging or metrics.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Long Functions</strong>: run_stage method is 45 lines long and could be decomposed into smaller functions.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">MaintainabilityIndex</span> <strong>Code Quality & Maintainability</strong>: Low Maintainability Index (24.0/100). Consider refactoring to reduce complexity.</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [W503] line break before binary operator</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [W503] line break before binary operator</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [W503] line break before binary operator</div></div></td></tr><tr onclick="toggleFindings(5)" class="file-row"><td>./nikui/cli.py</td><td><strong>973</strong></td><td>139</td><td>11</td><td>7</td><td>✅ Healthy</td></tr><tr id="findings-5" class="findings-row"><td colspan="6"><div class="findings-content"><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: The smell_parser.add_argument function is called multiple times with a large number of parameters, which could be refactored into a configuration object.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: The report_parser.add_argument function is called multiple times with a large number of parameters, which could be refactored into a configuration object.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: The variable names used in the smell_parser.add_argument function are generic and do not clearly convey their purpose.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: The variable names used in the report_parser.add_argument function are generic and do not clearly convey their purpose.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Resource Management & Security</strong>: The code does not explicitly handle resource management, such as closing file handles or database connections.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: The default output file name 'analysis_report.json' is hardcoded without a named constant.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: The default HTML output file name 'analysis_report.html' is hardcoded without a named constant.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Long Functions</strong>: The main function is excessively long, spanning 84 lines. It would benefit from decomposition into smaller, more focused functions.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: The code silently handles the case where no JSON results are found by falling back to a default file, which may not be the intended behavior.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: The code silently handles the case where no JSON results are found by falling back to a default file, which may not be the intended behavior.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">MaintainabilityIndex</span> <strong>Code Quality & Maintainability</strong>: Low Maintainability Index (39.2/100). Consider refactoring to reduce complexity.</div></div></td></tr><tr onclick="toggleFindings(6)" class="file-row"><td>./nikui/engines/dependency_engine.py</td><td><strong>472</strong></td><td>118</td><td>12</td><td>4</td><td>✅ Healthy</td></tr><tr id="findings-6" class="findings-row"><td colspan="6"><div class="findings-content"><div class="finding-item"><span class="badge badge-high">High</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: Empty except block that hides any exceptions raised while reading the file.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: Magic numbers (8 and 15) used for thresholds without named constants.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: The __init__ method takes a single parameter, which is acceptable.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: The extract_imports method takes a single parameter, which is acceptable.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: The run_stage method takes a single parameter, which is acceptable.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: The run_stage method takes a single parameter, which is acceptable.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">GenericMetrics</span> <strong>Code Quality & Maintainability</strong>: Line exceeds 120 characters.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Deep Nesting</strong>: Nested loop and conditional logic within the extract_imports method, making it hard to follow.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Long Functions</strong>: The run_stage method is 56 lines long and could benefit from decomposition.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>SOLID Violations (Primarily SRP)</strong>: The run_stage method performs multiple distinct responsibilities: building the graph and analyzing it.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>God Objects / Shotgun Surgery</strong>: The DependencyEngine class handles both dependency graph construction and analysis, which are unrelated concerns.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">MaintainabilityIndex</span> <strong>Code Quality & Maintainability</strong>: Low Maintainability Index (36.7/100). Consider refactoring to reduce complexity.</div></div></td></tr><tr onclick="toggleFindings(7)" class="file-row"><td>./nikui/engines/semgrep_engine.py</td><td><strong>310</strong></td><td>103</td><td>14</td><td>3</td><td>✅ Healthy</td></tr><tr id="findings-7" class="findings-row"><td colspan="6"><div class="findings-content"><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Poor Naming</strong>: Variable names 'config' and 'script_dir' are generic and do not clearly convey their purpose in the context of the class.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Magic Numbers & Strings</strong>: The string 'semgrep.json' is hardcoded without a named constant.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Long Parameter Lists</strong>: The SemgrepEngine class constructor takes two parameters, which is not a significant issue but could be improved with a config object.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Resource Management & Security</strong>: The file is opened without a context manager, which could lead to resource leaks if an error occurs.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>God Objects / Shotgun Surgery</strong>: The SemgrepEngine class handles both running the Semgrep scan and parsing the results, which could be separated into different classes.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Duplicate Code / DRY Violations</strong>: The categorize_finding method contains repeated logic for checking keywords in the check_id and category_meta.</div><div class="finding-item"><span class="badge badge-low">Low</span> <span class="badge badge-tool">Ollama</span> <strong>Dead Code</strong>: There is no dead code in the provided snippet.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Deep Nesting</strong>: The logic for determining if a finding is a security issue is nested deeply within multiple conditional checks.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Improper Error Handling & Silent Failures</strong>: The subprocess.run call does not handle the output or errors properly, and the except block only prints an error message without further action.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">Ollama</span> <strong>Long Functions</strong>: The parse_results function is 48 lines long and could benefit from decomposition into smaller functions.</div><div class="finding-item"><span class="badge badge-medium">Medium</span> <span class="badge badge-tool">MaintainabilityIndex</span> <strong>Code Quality & Maintainability</strong>: Low Maintainability Index (40.3/100). Consider refactoring to reduce complexity.</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [W503] line break before binary operator</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [W503] line break before binary operator</div><div class="finding-item"><span class="badge badge-n/a">N/A</span> <span class="badge badge-tool">Flake8</span> <strong>Code Quality & Maintainability</strong>: [W503] line break before binary operator</div></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let activeTool = 'all';
+
+    function toggleToolFilter(el, tool) {
+        document.querySelectorAll('.pill-filters .pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        activeTool = tool;
+        updateFilters();
+    }
+
+    function toggleFindings(i){
+        const r = document.getElementById('findings-' + i);
+        if (r) r.classList.toggle('active');
+    }
+
+    function updateFilters() {
+        const searchText = document.getElementById("searchInput").value.toUpperCase();
+        const rows = document.getElementsByClassName("file-row");
+
+        for (let i = 0; i < rows.length; i++) {
+            const pathTd = rows[i].getElementsByTagName("td")[0];
+            const findingsId = rows[i].getAttribute('onclick').match(/\d+/)[0];
+            const findingsRow = document.getElementById('findings-' + findingsId);
+            
+            let matchesSearch = true;
+            if (pathTd) {
+                matchesSearch = pathTd.textContent.toUpperCase().indexOf(searchText) > -1;
+            }
+
+            let matchesTool = true;
+            if (activeTool !== 'all') {
+                // Check if any finding inside matches the tool
+                const tools = findingsRow.querySelectorAll('.badge-tool');
+                matchesTool = Array.from(tools).some(t => t.textContent.trim() === activeTool);
+            }
+
+            if (matchesSearch && matchesTool) {
+                rows[i].style.display = "";
+            } else {
+                rows[i].style.display = "none";
+                findingsRow.classList.remove('active');
+            }
+        }
+    }
+
+    function sortTable(n) {
+        const table = document.getElementById("hotspotTable");
+        let switching = true, shouldSwitch, i, dir = "desc", switchcount = 0;
+        while (switching) {
+            switching = false;
+            const rows = table.getElementsByClassName("file-row");
+            for (i = 0; i < (rows.length - 1); i++) {
+                shouldSwitch = false;
+                let x = rows[i].getElementsByTagName("TD")[n];
+                let y = rows[i + 1].getElementsByTagName("TD")[n];
+                let xVal = isNaN(parseFloat(x.innerText)) ? x.innerText.toLowerCase() : parseFloat(x.innerText);
+                let yVal = isNaN(parseFloat(y.innerText)) ? y.innerText.toLowerCase() : parseFloat(y.innerText);
+                
+                if (dir == "asc") {
+                    if (xVal > yVal) { shouldSwitch = true; break; }
+                } else if (dir == "desc") {
+                    if (xVal < yVal) { shouldSwitch = true; break; }
+                }
+            }
+            if (shouldSwitch) {
+                const findingsRow = document.getElementById('findings-' + rows[i].getAttribute('onclick').match(/\d+/)[0]);
+                const nextFindingsRow = document.getElementById('findings-' + rows[i+1].getAttribute('onclick').match(/\d+/)[0]);
+                
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                rows[i+1].parentNode.insertBefore(nextFindingsRow, rows[i+1].nextSibling);
+                
+                switching = true;
+                switchcount ++;
+            } else {
+                if (switchcount == 0 && dir == "desc") { dir = "asc"; switching = true; }
+            }
+        }
+    }
+
+    const ctx = document.getElementById('hotspotChart').getContext('2d');
+    const chartData = [{"x": 12, "y": 448.0, "score": 5376, "name": "./nikui/engines/ollama_engine.py", "debt_type": "\ud83d\udd25 Toxic"}, {"x": 9, "y": 200.0, "score": 1800, "name": "./nikui/engines/duplication_engine.py", "debt_type": "\ud83d\udd25 Toxic"}, {"x": 13, "y": 120.5, "score": 1566, "name": "./nikui/generate_report.py", "debt_type": "\u26a1 Quick Win"}, {"x": 14, "y": 83.0, "score": 1162, "name": "./nikui/nikui.py", "debt_type": "\u26a1 Quick Win"}, {"x": 9, "y": 109.5, "score": 985, "name": "./nikui/engines/metrics_engine.py", "debt_type": "\u26a1 Quick Win"}, {"x": 7, "y": 139.0, "score": 973, "name": "./nikui/cli.py", "debt_type": "\u2705 Healthy"}, {"x": 4, "y": 118.0, "score": 472, "name": "./nikui/engines/dependency_engine.py", "debt_type": "\u2705 Healthy"}, {"x": 3, "y": 103.5, "score": 310, "name": "./nikui/engines/semgrep_engine.py", "debt_type": "\u2705 Healthy"}];
+    
+    new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Files',
+                data: chartData,
+                backgroundColor: (ctx) => {
+                    if (ctx.dataIndex === undefined) return 'rgba(59, 130, 246, 0.6)';
+                    const type = chartData[ctx.dataIndex].debt_type;
+                    if (type.includes('Toxic')) return 'rgba(239, 68, 68, 0.8)'; // Red
+                    if (type.includes('Frozen')) return 'rgba(59, 130, 246, 0.5)'; // Blue
+                    if (type.includes('Quick Win')) return 'rgba(245, 158, 11, 0.8)'; // Yellow
+                    return 'rgba(16, 185, 129, 0.6)'; // Green (Healthy)
+                },
+                borderColor: 'transparent',
+                pointRadius: (ctx) => {
+                    if (ctx.dataIndex === undefined) return 6;
+                    const score = chartData[ctx.dataIndex].score;
+                    return 5 + Math.min(score / 50, 15);
+                },
+                pointHoverRadius: 12
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: 'Churn (Git Commits)' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { title: { display: true, text: 'Stench (Weighted Debt)' }, grid: { color: 'rgba(0,0,0,0.05)' } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const item = chartData[ctx.dataIndex];
+                            return [item.name, item.debt_type + ' (Score: ' + item.score + ')', 'Stench: ' + item.y, 'Churn: ' + item.x];
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

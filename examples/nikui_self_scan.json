@@ -1,0 +1,907 @@
+[
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 22,
+    "line_range": "22-25",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Prints a warning without logging or handling the exception."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 28,
+    "line_range": "28-30",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Prints a warning without logging or handling the exception."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 47,
+    "line_range": "47-48",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Prints an error message without logging or handling the exception."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 61,
+    "line_range": "61-62",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Prints an error message without logging or handling the exception."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 111,
+    "line_range": "111",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Passes silently without logging or handling the exception."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 146,
+    "line_range": "146-147",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Prints an error message without logging or handling the exception."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 150,
+    "line_range": "150-151",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Prints a warning without logging or handling the exception."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 161,
+    "line_range": "161",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "Variable name 'fnd' is not descriptive."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 173,
+    "line_range": "173",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "Function 'run_stage' has 5 parameters."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 173,
+    "line_range": "173-208",
+    "category": "Long Functions",
+    "severity": "Low",
+    "description": "Function 'run_stage' is 36 lines long."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 80,
+    "line_range": "80-84",
+    "category": "Deep Nesting",
+    "severity": "Medium",
+    "description": "Nested loops and conditionals inside a loop (lines 80-84) increase complexity."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 28,
+    "line_range": "28-29",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "Variable name 'config' is too generic and does not convey its purpose."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 194,
+    "line_range": "194-238",
+    "category": "SOLID Violations (Primarily SRP)",
+    "severity": "Medium",
+    "description": "MetricsEngine class has multiple responsibilities: running stages, handling file reading, and invoking different scanners."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 223,
+    "line_range": "223-224",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Error handling in file reading does not provide detailed logging or metrics."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 13,
+    "line_range": "13-19",
+    "category": "Resource Management & Security",
+    "severity": "Low",
+    "description": "Subprocess.run is used without ensuring proper resource management."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 140,
+    "line_range": "140",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "Hardcoded string ':latest' in regex pattern without explanation."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 123,
+    "line_range": "123-124",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "scan method has 4 parameters, which could be encapsulated into a data class."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 194,
+    "line_range": "194-238",
+    "category": "Long Functions",
+    "severity": "Medium",
+    "description": "run_stage method is 45 lines long and could be decomposed into smaller functions."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 190,
+    "line_range": "190",
+    "category": "Dead Code",
+    "severity": "Low",
+    "description": "Break statement in scan_lines method prevents further line length checks after the first long line."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 162,
+    "line_range": "162-163",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "Variable name 'config' is too generic and does not convey its purpose."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 26,
+    "line_range": "26-31",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "High",
+    "description": "The `except` block in `get_git_metadata` catches all exceptions and returns default values without logging the error, which can hide issues and make debugging difficult."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 46,
+    "line_range": "46-54",
+    "category": "Deep Nesting",
+    "severity": "Medium",
+    "description": "The `for` loop inside `calculate_stench` is nested within another `for` loop, resulting in deep nesting that can reduce readability and maintainability."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 60,
+    "line_range": "60-73",
+    "category": "Deep Nesting",
+    "severity": "Medium",
+    "description": "The `for` loop inside `score_hotspots` is nested within another `for` loop, resulting in deep nesting that can reduce readability and maintainability."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 122,
+    "line_range": "122-156",
+    "category": "Deep Nesting",
+    "severity": "Medium",
+    "description": "The `for` loop inside `render` is nested within another `for` loop, resulting in deep nesting that can reduce readability and maintainability."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 37,
+    "line_range": "37",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "The variable name `config` in the `__init__` method of `HotspotCalculator` is generic and does not convey its purpose clearly."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 102,
+    "line_range": "102",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "The variable name `config` in the `__init__` method of `HtmlReporter` is generic and does not convey its purpose clearly."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 182,
+    "line_range": "182",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "The `generate_reports` function has 4 parameters, which is slightly above the recommended limit and could benefit from a configuration object."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 182,
+    "line_range": "182-229",
+    "category": "Long Functions",
+    "severity": "Medium",
+    "description": "The `generate_reports` function is 48 lines long and performs multiple responsibilities, which can make it difficult to understand and maintain."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 40,
+    "line_range": "40",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "The hardcoded values `3.0`, `2.0`, `1.0`, and `1.5` in the `multipliers` dictionary are domain-specific and should be named constants for better readability."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/generate_report.py",
+    "line": 166,
+    "line_range": "166",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "The hardcoded value `1` in the `multipliers` dictionary is domain-specific and should be named constants for better readability."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 17,
+    "line_range": "17-22",
+    "category": "Deep Nesting",
+    "severity": "Medium",
+    "description": "The logic for determining if a finding is a security issue is nested deeply within multiple conditional checks."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 10,
+    "line_range": "10-11",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "Variable names 'config' and 'script_dir' are generic and do not clearly convey their purpose in the context of the class."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 76,
+    "line_range": "76-78",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "The subprocess.run call does not handle the output or errors properly, and the except block only prints an error message without further action."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 66,
+    "line_range": "66",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "The string 'semgrep.json' is hardcoded without a named constant."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 8,
+    "line_range": "8",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "The SemgrepEngine class constructor takes two parameters, which is not a significant issue but could be improved with a config object."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 37,
+    "line_range": "37-84",
+    "category": "Long Functions",
+    "severity": "Medium",
+    "description": "The parse_results function is 48 lines long and could benefit from decomposition into smaller functions."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 78,
+    "line_range": "78",
+    "category": "Resource Management & Security",
+    "severity": "Low",
+    "description": "The file is opened without a context manager, which could lead to resource leaks if an error occurs."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 8,
+    "line_range": "8",
+    "category": "God Objects / Shotgun Surgery",
+    "severity": "Low",
+    "description": "The SemgrepEngine class handles both running the Semgrep scan and parsing the results, which could be separated into different classes."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 17,
+    "line_range": "17-22, 26-32",
+    "category": "Duplicate Code / DRY Violations",
+    "severity": "Low",
+    "description": "The categorize_finding method contains repeated logic for checking keywords in the check_id and category_meta."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": null,
+    "line_range": "N/A",
+    "category": "Dead Code",
+    "severity": "Low",
+    "description": "There is no dead code in the provided snippet."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": 56,
+    "line_range": "56-65",
+    "category": "Deep Nesting",
+    "severity": "Medium",
+    "description": "The nested loop and conditional logic within the os.walk() block is deeply nested, making the code harder to read and maintain."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": 15,
+    "line_range": "15-21",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "The function name 'load_config' is generic and does not clearly convey its purpose of loading a configuration file."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": 23,
+    "line_range": "23-117",
+    "category": "SOLID Violations (Primarily SRP)",
+    "severity": "Medium",
+    "description": "The main() function performs multiple distinct responsibilities, including argument parsing, configuration loading, file traversal, and running multiple analysis stages."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": 23,
+    "line_range": "23-117",
+    "category": "God Objects / Shotgun Surgery",
+    "severity": "Medium",
+    "description": "The main() function handles multiple unrelated concerns, such as argument parsing, configuration management, file traversal, and running different analysis engines."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": 16,
+    "line_range": "16-18",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Low",
+    "description": "The error handling for missing configuration files does not provide detailed logging or alerting."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": null,
+    "line_range": "N/A",
+    "category": "Resource Management & Security",
+    "severity": "Low",
+    "description": "No hardcoded secrets or sensitive information are found in the code."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": 55,
+    "line_range": "55",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "The tuple of valid file extensions is hardcoded without a named constant."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": null,
+    "line_range": "N/A",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "No functions or constructors with 5 or more parameters are found in the code."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": null,
+    "line_range": "70, 75",
+    "category": "Duplicate Code / DRY Violations",
+    "severity": "Low",
+    "description": "The OllamaEngine is instantiated twice with the same parameters, which could be extracted into a shared function."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/nikui.py",
+    "line": 23,
+    "line_range": "23-117",
+    "category": "Long Functions",
+    "severity": "Medium",
+    "description": "The main() function is excessively long, spanning approximately 95 lines, which makes it difficult to read and maintain."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 173,
+    "line_range": "173-199",
+    "category": "Deep Nesting",
+    "severity": "Medium",
+    "description": "Nested loops and conditionals make the code hard to read and maintain."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 148,
+    "line_range": "148",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "Function name 'run_stage' is generic and does not clearly convey its responsibility."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 48,
+    "line_range": "48-50",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Empty except block that hides file reading errors."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 94,
+    "line_range": "94-95",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "Empty except block that hides AST parsing errors."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 28,
+    "line_range": "28-30",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "Constructor takes multiple parameters which could be encapsulated into a config object."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 148,
+    "line_range": "148-250",
+    "category": "Long Functions",
+    "severity": "Medium",
+    "description": "Function 'run_stage' is long and complex, exceeding 50 lines."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 35,
+    "line_range": "35",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "Hardcoded shingle size of 4 without a named constant."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 182,
+    "line_range": "182",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "Hardcoded similarity threshold calculation without a named constant."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 189,
+    "line_range": "189",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "Hardcoded similarity threshold of 0.85 without a named constant."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 215,
+    "line_range": "215",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "Hardcoded similarity threshold of 98 without a named constant."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 8,
+    "line_range": "8-92",
+    "category": "Long Functions",
+    "severity": "Medium",
+    "description": "The main function is excessively long, spanning 84 lines. It would benefit from decomposition into smaller, more focused functions."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 15,
+    "line_range": "15-29",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "The smell_parser.add_argument function is called multiple times with a large number of parameters, which could be refactored into a configuration object."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 33,
+    "line_range": "33-45",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "The report_parser.add_argument function is called multiple times with a large number of parameters, which could be refactored into a configuration object."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 15,
+    "line_range": "15-29",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "The variable names used in the smell_parser.add_argument function are generic and do not clearly convey their purpose."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 33,
+    "line_range": "33-45",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "The variable names used in the report_parser.add_argument function are generic and do not clearly convey their purpose."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 67,
+    "line_range": "67-74",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "The code silently handles the case where no JSON results are found by falling back to a default file, which may not be the intended behavior."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 76,
+    "line_range": "76-77",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "Medium",
+    "description": "The code silently handles the case where no JSON results are found by falling back to a default file, which may not be the intended behavior."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": null,
+    "line_range": "N/A",
+    "category": "Resource Management & Security",
+    "severity": "Low",
+    "description": "The code does not explicitly handle resource management, such as closing file handles or database connections."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 21,
+    "line_range": "21-23",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "The default output file name 'analysis_report.json' is hardcoded without a named constant."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/cli.py",
+    "line": 42,
+    "line_range": "42-43",
+    "category": "Magic Numbers & Strings",
+    "severity": "Low",
+    "description": "The default HTML output file name 'analysis_report.html' is hardcoded without a named constant."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 23,
+    "line_range": "23-27",
+    "category": "Improper Error Handling & Silent Failures",
+    "severity": "High",
+    "description": "Empty except block that hides any exceptions raised while reading the file."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 44,
+    "line_range": "44-61",
+    "category": "Deep Nesting",
+    "severity": "Medium",
+    "description": "Nested loop and conditional logic within the extract_imports method, making it hard to follow."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 81,
+    "line_range": "81-83",
+    "category": "Poor Naming",
+    "severity": "Low",
+    "description": "Magic numbers (8 and 15) used for thresholds without named constants."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 63,
+    "line_range": "63-118",
+    "category": "Long Functions",
+    "severity": "Medium",
+    "description": "The run_stage method is 56 lines long and could benefit from decomposition."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 63,
+    "line_range": "63-118",
+    "category": "SOLID Violations (Primarily SRP)",
+    "severity": "Medium",
+    "description": "The run_stage method performs multiple distinct responsibilities: building the graph and analyzing it."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 7,
+    "line_range": "7-118",
+    "category": "God Objects / Shotgun Surgery",
+    "severity": "Medium",
+    "description": "The DependencyEngine class handles both dependency graph construction and analysis, which are unrelated concerns."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 8,
+    "line_range": "8-11",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "The __init__ method takes a single parameter, which is acceptable."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 18,
+    "line_range": "18-21",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "The extract_imports method takes a single parameter, which is acceptable."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 63,
+    "line_range": "63-66",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "The run_stage method takes a single parameter, which is acceptable."
+  },
+  {
+    "tool": "Ollama",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 100,
+    "line_range": "100-103",
+    "category": "Long Parameter Lists",
+    "severity": "Low",
+    "description": "The run_stage method takes a single parameter, which is acceptable."
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 37,
+    "category": "Code Quality & Maintainability",
+    "description": "[E203] whitespace before ':'"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 80,
+    "category": "Code Quality & Maintainability",
+    "description": "[E203] whitespace before ':'"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 149,
+    "category": "Architectural & Design Flaw",
+    "description": "[C901] 'DuplicationEngine.run_stage' is too complex (15)"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 160,
+    "category": "Code Quality & Maintainability",
+    "description": "[E226] missing whitespace around arithmetic operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 212,
+    "category": "Code Quality & Maintainability",
+    "description": "[E226] missing whitespace around arithmetic operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 91,
+    "category": "Code Quality & Maintainability",
+    "description": "[W503] line break before binary operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 92,
+    "category": "Code Quality & Maintainability",
+    "description": "[W503] line break before binary operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 93,
+    "category": "Code Quality & Maintainability",
+    "description": "[W503] line break before binary operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 79,
+    "category": "Code Quality & Maintainability",
+    "description": "[E226] missing whitespace around arithmetic operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 187,
+    "category": "Code Quality & Maintainability",
+    "description": "[E226] missing whitespace around arithmetic operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 19,
+    "category": "Code Quality & Maintainability",
+    "description": "[W503] line break before binary operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 20,
+    "category": "Code Quality & Maintainability",
+    "description": "[W503] line break before binary operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 21,
+    "category": "Code Quality & Maintainability",
+    "description": "[W503] line break before binary operator"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/generate_report.py",
+    "line": 123,
+    "category": "Code Quality & Maintainability",
+    "description": "[F841] local variable 'current_time' is assigned to but never used"
+  },
+  {
+    "tool": "Flake8",
+    "file_path": "./nikui/nikui.py",
+    "line": 23,
+    "category": "Architectural & Design Flaw",
+    "description": "[C901] 'main' is too complex (12)"
+  },
+  {
+    "tool": "MaintainabilityIndex",
+    "file_path": "./nikui/cli.py",
+    "line": 1,
+    "category": "Code Quality & Maintainability",
+    "severity": "Medium",
+    "description": "Low Maintainability Index (39.2/100). Consider refactoring to reduce complexity."
+  },
+  {
+    "tool": "MaintainabilityIndex",
+    "file_path": "./nikui/generate_report.py",
+    "line": 1,
+    "category": "Code Quality & Maintainability",
+    "severity": "Medium",
+    "description": "Low Maintainability Index (24.9/100). Consider refactoring to reduce complexity."
+  },
+  {
+    "tool": "MaintainabilityIndex",
+    "file_path": "./nikui/nikui.py",
+    "line": 1,
+    "category": "Code Quality & Maintainability",
+    "severity": "Medium",
+    "description": "Low Maintainability Index (36.6/100). Consider refactoring to reduce complexity."
+  },
+  {
+    "tool": "MaintainabilityIndex",
+    "file_path": "./nikui/engines/duplication_engine.py",
+    "line": 1,
+    "category": "Code Quality & Maintainability",
+    "severity": "Medium",
+    "description": "Low Maintainability Index (23.0/100). Consider refactoring to reduce complexity."
+  },
+  {
+    "tool": "GenericMetrics",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 105,
+    "category": "Code Quality & Maintainability",
+    "severity": "Low",
+    "description": "Line exceeds 120 characters."
+  },
+  {
+    "tool": "MaintainabilityIndex",
+    "file_path": "./nikui/engines/metrics_engine.py",
+    "line": 1,
+    "category": "Code Quality & Maintainability",
+    "severity": "Medium",
+    "description": "Low Maintainability Index (24.0/100). Consider refactoring to reduce complexity."
+  },
+  {
+    "tool": "MaintainabilityIndex",
+    "file_path": "./nikui/engines/semgrep_engine.py",
+    "line": 1,
+    "category": "Code Quality & Maintainability",
+    "severity": "Medium",
+    "description": "Low Maintainability Index (40.3/100). Consider refactoring to reduce complexity."
+  },
+  {
+    "tool": "GenericMetrics",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 94,
+    "category": "Code Quality & Maintainability",
+    "severity": "Low",
+    "description": "Line exceeds 120 characters."
+  },
+  {
+    "tool": "MaintainabilityIndex",
+    "file_path": "./nikui/engines/dependency_engine.py",
+    "line": 1,
+    "category": "Code Quality & Maintainability",
+    "severity": "Medium",
+    "description": "Low Maintainability Index (36.7/100). Consider refactoring to reduce complexity."
+  },
+  {
+    "tool": "MaintainabilityIndex",
+    "file_path": "./nikui/engines/ollama_engine.py",
+    "line": 1,
+    "category": "Code Quality & Maintainability",
+    "severity": "Medium",
+    "description": "Low Maintainability Index (26.3/100). Consider refactoring to reduce complexity."
+  }
+]
