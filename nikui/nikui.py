@@ -41,7 +41,12 @@ def main():
     temp_dir = os.path.join(os.getcwd(), ".nikui_tmp")
     os.makedirs(temp_dir, exist_ok=True)
     print(
-        f"Nikui Analysis Plan:\n1. Deep Semantic Analysis (Ollama)\n2. Security & Best Practices (Semgrep)\n3. Objective Metrics (Flake8/GoVet/Regex)\nTarget: {args.repo_path}"
+        f"Nikui Analysis Plan:\n"
+        f"1. Deep Semantic Analysis (Ollama)\n"
+        f"2. Security & Best Practices (Semgrep)\n"
+        f"3. Objective Metrics (Flake8/Regex)\n"
+        f"4. Code Duplication (Simhash)\n"
+        f"Target: {args.repo_path}"
     )
 
     eligible_files = []
