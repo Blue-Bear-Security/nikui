@@ -74,4 +74,4 @@ Nikui doesn't just list bugs; it prioritizes them using a **Hotspot Score**:
 MIT
 
 ---
-Created by **amirshk**
+Created by [**amirshk**](https://github.com/amirshk)
