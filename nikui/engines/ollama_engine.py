@@ -21,13 +21,20 @@ class LLMClient:
     def is_running(self):
         try:
             response = requests.get(f"{self.base_url}/models", headers=self.headers, timeout=2)
-            # 401 means the server is reachable but needs auth — treat as running
-            return response.status_code in (200, 401)
+            if response.status_code == 401:
+                # Reachable but needs auth — assume model is valid (can't list without key)
+                return True
+            if response.status_code != 200:
+                print(f"Warning: LLM service returned {response.status_code} at {self.base_url}.", file=sys.stderr)
+                return False
+            # Verify the configured model is available
+            models = [m.get("id", "") for m in response.json().get("data", [])]
+            if models and self.model not in models:
+                print(f"Warning: Model '{self.model}' not found. Available: {', '.join(models)}", file=sys.stderr)
+                return False
+            return True
         except requests.exceptions.ConnectionError:
-            print(
-                f"Warning: LLM service is not reachable at {self.base_url}.",
-                file=sys.stderr,
-            )
+            print(f"Warning: LLM service is not reachable at {self.base_url}.", file=sys.stderr)
             return False
         except Exception as e:
             print(f"Warning: Unexpected error checking LLM service: {e}", file=sys.stderr)
