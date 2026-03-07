@@ -5,7 +5,7 @@
   },
   "ollama": {
     "base_url": "http://localhost:11434/v1",
-    "model": "qwen2.5-coder:7b",
+    "model": "qwen2.5-coder:14b",
     "sampling_rate": 1.0,
     "workers": 2
   },
