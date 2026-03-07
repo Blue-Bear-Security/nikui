@@ -85,7 +85,7 @@ class OllamaEngine:
             if clean_json:
                 data = json.loads(clean_json.group(0))
                 return data.get("status") == "DUPLICATE", data.get("reason", "")
-        except:
+        except Exception:
             pass
         return True, "Parse failed, assuming duplicate"
 

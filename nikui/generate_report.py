@@ -10,21 +10,17 @@ from nikui.utils import is_excluded
 
 
 def get_git_metadata(file_path):
+    """Fetches commit count and last modification time from Git."""
     try:
         quoted_path = shlex.quote(file_path)
+        commit_count_cmd = f"git rev-list --count HEAD -- {quoted_path}"
+        last_mod_cmd = f"git log -1 --format=%ct -- {quoted_path}"
+
         commit_count = int(
-            subprocess.check_output(
-                f"git rev-list --count HEAD -- {quoted_path}", shell=True
-            )
-            .decode()
-            .strip()
+            subprocess.check_output(commit_count_cmd, shell=True).decode().strip()
         )
         last_mod = int(
-            subprocess.check_output(
-                f"git log -1 --format=%ct -- {quoted_path}", shell=True
-            )
-            .decode()
-            .strip()
+            subprocess.check_output(last_mod_cmd, shell=True).decode().strip()
         )
         return commit_count, last_mod
     except Exception as e:
@@ -36,40 +32,53 @@ def get_git_metadata(file_path):
 
 
 class HotspotCalculator:
+    """Pure logic class for calculating hotspot scores."""
+
     def __init__(self, config):
-        self.config = config
         self.weights = config.get("stench_weights", {})
         self.multipliers = {"High": 3.0, "Medium": 2.0, "Low": 1.0, "N/A": 1.5}
 
-    def calculate(self, findings):
-        file_stats = defaultdict(
-            lambda: {"stench": 0, "findings": 0, "churn": 0, "last_mod": 0}
-        )
+    def calculate_stench(self, findings):
+        """Calculates total stench per file."""
+        file_stench = defaultdict(float)
+        file_counts = defaultdict(int)
+
         for f in findings:
             path = f.get("file_path", "Unknown")
             category = f.get("category")
             severity = f.get("severity", "N/A")
 
             score = self.weights.get(category, 1) * self.multipliers.get(severity, 1.5)
-            file_stats[path]["stench"] += score
-            file_stats[path]["findings"] += 1
+            file_stench[path] += score
+            file_counts[path] += 1
 
-        for path in file_stats:
-            churn, last_mod = get_git_metadata(path)
-            file_stats[path].update(
-                {
-                    "churn": churn,
-                    "last_mod": last_mod,
-                    "hotspot_score": file_stats[path]["stench"] * churn,
-                }
+        return file_stench, file_counts
+
+    def score_hotspots(self, file_stench, file_counts, git_metadata):
+        """Combines stench and churn into a prioritized list."""
+        scored_files = []
+        for path, stench in file_stench.items():
+            churn, last_mod = git_metadata.get(path, (1, int(time.time())))
+            hotspot_score = stench * churn
+            scored_files.append(
+                (
+                    path,
+                    {
+                        "stench": stench,
+                        "findings": file_counts[path],
+                        "churn": churn,
+                        "last_mod": last_mod,
+                        "hotspot_score": hotspot_score,
+                    },
+                )
             )
 
-        return sorted(
-            file_stats.items(), key=lambda x: x[1]["hotspot_score"], reverse=True
-        )
+        return sorted(scored_files, key=lambda x: x[1]["hotspot_score"], reverse=True)
 
 
 class HtmlReporter:
+    """Handles only the rendering of the HTML report."""
+
     def __init__(self, config):
         self.config = config
 
@@ -86,18 +95,13 @@ class HtmlReporter:
         with open(template_path, "r", encoding="utf-8") as f:
             template = f.read()
 
-        # Prepare Table Rows & Chart Data
         table_rows = []
         chart_data = []
         current_time = int(time.time())
-        max_hotspot = 0
-        total_churn = 0
 
         for idx, (path, stats) in enumerate(sorted_files):
             age_days = (current_time - stats["last_mod"]) // (24 * 3600)
             status = "ACTIVE" if age_days < 90 else "LEGACY"
-            max_hotspot = max(max_hotspot, stats["hotspot_score"])
-            total_churn += stats["churn"]
 
             chart_data.append(
                 {
@@ -131,13 +135,14 @@ class HtmlReporter:
                 )
             table_rows.append("</div></td></tr>")
 
-        # Replace placeholders
         replacements = {
             "{{timestamp}}": time.strftime("%Y-%m-%d %H:%M:%S"),
             "{{total_files}}": str(len(sorted_files)),
             "{{total_findings}}": str(len(findings)),
-            "{{max_hotspot}}": str(int(max_hotspot)),
-            "{{avg_churn}}": f"{total_churn / len(sorted_files):.1f}"
+            "{{max_hotspot}}": str(int(sorted_files[0][1]["hotspot_score"]))
+            if sorted_files
+            else "0",
+            "{{avg_churn}}": f"{sum(s[1]['churn'] for s in sorted_files) / len(sorted_files):.1f}"
             if sorted_files
             else "0",
             "{{chart_data_json}}": json.dumps(chart_data),
@@ -172,23 +177,27 @@ def generate_reports(repo_path, json_path, html_path, config_path):
     os.chdir(repo_path)
 
     calculator = HotspotCalculator(config)
-    sorted_files = calculator.calculate(findings)
+    file_stench, file_counts = calculator.calculate_stench(findings)
 
-    # Ensure nikui_results directory exists inside the scanned repo
-    nikui_results_dir = os.path.join(os.path.abspath(repo_path), "nikui_results")
-    os.makedirs(nikui_results_dir, exist_ok=True)
+    # SRP: Fetch metadata separately
+    git_metadata = {}
+    for path in file_stench:
+        git_metadata[path] = get_git_metadata(path)
 
-    # Use basename check to detect default path reliably
+    sorted_files = calculator.score_hotspots(file_stench, file_counts, git_metadata)
+
+    results_dir = os.path.join(os.path.abspath(repo_path), "nikui_results")
+    os.makedirs(results_dir, exist_ok=True)
+
     if os.path.basename(html_path) == "analysis_report.html":
-        # Link to the JSON filename if it's in the results folder
         if "nikui_results" in json_path:
             json_base = os.path.splitext(os.path.basename(json_path))[0]
-            final_html_path = os.path.join(nikui_results_dir, f"{json_base}.html")
+            final_html_path = os.path.join(results_dir, f"{json_base}.html")
         else:
             repo_name = os.path.basename(os.path.abspath(repo_path)) or "repo"
             timestamp = time.strftime("%Y%m%d_%H%M")
             final_html_path = os.path.join(
-                nikui_results_dir, f"{repo_name}_{timestamp}.html"
+                results_dir, f"{repo_name}_{timestamp}.html"
             )
     else:
         final_html_path = html_path

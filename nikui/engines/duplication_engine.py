@@ -5,7 +5,6 @@ import ast
 import warnings
 from itertools import combinations
 from simhash import Simhash
-from nikui.utils import is_excluded
 
 
 class UniversalNormalizer:

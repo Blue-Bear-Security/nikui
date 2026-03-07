@@ -1,5 +1,11 @@
 Act as an expert Senior Software Engineer and Architect. Analyze the provided code for technical debt and "code smells" based on the following rubric:
 
+### GROUNDING RULES:
+- Only report issues for the code explicitly provided below. 
+- Do NOT assume the existence of other files, classes, or functions based on imports or package names.
+- If the code is empty, boilerplate-only, or contains no detectable issues, you MUST return exactly: []
+- Do NOT invent "God Object" or "SRP" flags based on what you *think* might be in other files.
+
 1. **Deep Nesting**: Logic nested more than 3 levels deep (e.g., nested loops, complex if/else chains).
 2. **Poor Naming**: Variables, functions, or classes with non-descriptive names. 
    - **PRAGMATISM:** Ignore standard loop iterators like `i`, `j`, `idx`, `blk`, `f`, `k`, `v`. Only flag if the domain logic itself uses cryptic names.
