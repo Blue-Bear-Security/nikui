@@ -60,7 +60,7 @@ class SemgrepEngine:
 
     def run_stage(self, temp_dir):
         print(
-            "\n--- [Stage 2/3] Security & Best Practices Scan (Semgrep) ---",
+            "\n--- [Stage 2/5] Security & Best Practices Scan (Semgrep) ---",
             file=sys.stderr,
         )
         output_file = os.path.join(temp_dir, "semgrep.json")

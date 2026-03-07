@@ -199,7 +199,7 @@ class MetricsEngine:
 
     def run_stage(self, eligible_files):
         print(
-            "\n--- [Stage 3/4] Objective Metrics, IaC & Linting ---",
+            "\n--- [Stage 3/5] Objective Metrics, IaC & Linting ---",
             file=sys.stderr,
         )
         all_findings = []

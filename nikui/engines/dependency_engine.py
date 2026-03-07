@@ -63,6 +63,10 @@ class DependencyEngine:
     def run_stage(self, eligible_files):
         print("\n--- [Stage 5/5] Dependency & Coupling Analysis ---", file=sys.stderr)
 
+        # Reset state so run_stage is idempotent
+        self.outgoing_edges = defaultdict(list)
+        self.incoming_edges = defaultdict(list)
+
         # Build a fast lookup set of all files in the project
         self.eligible_paths = {os.path.normpath(f) for f in eligible_files}
 

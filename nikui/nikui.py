@@ -68,7 +68,7 @@ def main():
     # Stage 1: Ollama
     ollama = None
     if "ollama" in args.stages:
-        print("\n--- [Stage 1/4] Deep Semantic Analysis (LLM) ---", file=sys.stderr)
+        print("\n--- [Stage 1/5] Deep Semantic Analysis (LLM) ---", file=sys.stderr)
         ollama = OllamaEngine(config, script_dir, project_root)
         all_findings.extend(ollama.run_stage(eligible_files))
     elif "duplication" in args.stages:

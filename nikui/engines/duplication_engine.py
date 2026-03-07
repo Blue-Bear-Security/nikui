@@ -45,7 +45,8 @@ class DuplicationEngine:
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Could not read {file_path}: {e}", file=sys.stderr)
             return []
 
         if content.count("\n") < self.min_lines:
@@ -89,7 +90,8 @@ class DuplicationEngine:
                         }
                     )
             return records
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Could not parse {file_path}: {e}", file=sys.stderr)
             return []
 
     def _extract_generic_blocks(self, file_path, source, ext):
@@ -146,7 +148,7 @@ class DuplicationEngine:
 
     def run_stage(self, eligible_files, ollama=None):
         print(
-            "\n--- [Stage 4/4] Multi-Language Duplication Analysis ---", file=sys.stderr
+            "\n--- [Stage 4/5] Multi-Language Duplication Analysis ---", file=sys.stderr
         )
         all_blocks = []
 
