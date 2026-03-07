@@ -124,6 +124,8 @@ def generate_reports(repo_path, json_path, html_path, config_path):
 
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
+    
+    print(f"Reading findings from: {json_path}", file=sys.stderr)
     with open(json_path, "r", encoding="utf-8") as f:
         raw_findings = json.load(f)
 
