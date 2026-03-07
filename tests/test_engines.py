@@ -5,6 +5,7 @@ from unittest.mock import patch, MagicMock
 from nikui.engines.ollama_engine import OllamaEngine
 from nikui.engines.semgrep_engine import SemgrepEngine
 from nikui.engines.metrics_engine import MetricsEngine
+from nikui.engines.duplication_engine import DuplicationEngine
 
 
 @pytest.fixture
@@ -23,9 +24,19 @@ def semgrep_engine():
 def metrics_engine():
     config = {
         "exclusions": {"directories": [".venv"], "patterns": ["*.tmp"]},
+        "flake8": {"ignore": []},
         "stench_weights": {},
     }
     return MetricsEngine(config)
+
+
+@pytest.fixture
+def duplication_engine():
+    config = {
+        "exclusions": {"directories": [], "patterns": []},
+        "duplication": {"threshold": 0.90, "min_lines": 3},
+    }
+    return DuplicationEngine(config)
 
 
 def test_metrics_engine_respects_exclusions(metrics_engine, tmp_path):
@@ -96,6 +107,28 @@ def test_generic_file_scanner(metrics_engine, tmp_path):
     findings = metrics_engine.file_scanner.scan_file(str(f), max_line_length=120)
     assert len(findings) == 1
     assert "Line exceeds" in findings[0]["description"]
+
+
+def test_duplication_engine_detects_copies(duplication_engine, tmp_path):
+    code = """
+def calculate_sum(a, b):
+    # This is a comment
+    result = a + b
+    return result
+"""
+    file1 = tmp_path / "file1.py"
+    file1.write_text(code)
+
+    file2 = tmp_path / "file2.py"
+    # Near duplicate: different names, same structure
+    file2.write_text(code.replace("calculate_sum", "add_numbers").replace("result", "val"))
+
+    findings = duplication_engine.run_stage([str(tmp_path)])
+
+    # Should find at least 2 findings (one for each file in the group)
+    assert len(findings) >= 2
+    assert all(f["tool"] == "Duplication" for f in findings)
+    assert any("file1.py" in f["description"] for f in findings if "file2.py" in f["file_path"])
 
 
 @patch("nikui.engines.metrics_engine.CommandRunner.run")

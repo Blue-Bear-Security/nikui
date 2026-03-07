@@ -8,6 +8,7 @@ from nikui.utils import is_excluded
 from nikui.engines.ollama_engine import OllamaEngine
 from nikui.engines.semgrep_engine import SemgrepEngine
 from nikui.engines.metrics_engine import MetricsEngine
+from nikui.engines.duplication_engine import DuplicationEngine
 
 
 def load_config(config_path):
@@ -59,7 +60,13 @@ def main():
     # Stage 3: Metrics
     metrics = MetricsEngine(config)
     all_findings.extend(metrics.run_stage(["."]))
+
+    # Stage 4: Duplication
+    duplication = DuplicationEngine(config)
+    all_findings.extend(duplication.run_stage(["."]))
+
     # Ensure results directory exists
+
     results_dir = os.path.join(os.getcwd(), "results")
     os.makedirs(results_dir, exist_ok=True)
 
