@@ -63,6 +63,21 @@ ollama serve
 }
 ```
 
+#### Option D: OpenAI (fastest — recommended for large repos)
+`config.json`:
+```json
+"ollama": {
+  "base_url": "https://api.openai.com/v1",
+  "model": "gpt-4.1-mini",
+  "workers": 4
+}
+```
+Set your key as an environment variable — **never put it in `config.json`**:
+```bash
+export OPENAI_API_KEY=sk-...
+uv run nikui smell <repo_path>
+```
+
 > **LLM is optional.** If no backend is running, the semantic analysis and duplication verification stages are skipped gracefully.
 
 ## 📖 Usage

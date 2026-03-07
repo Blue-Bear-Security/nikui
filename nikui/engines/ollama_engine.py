@@ -8,16 +8,20 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class LLMClient:
-    """OpenAI-compatible client. Works with MLX, LM Studio, Ollama (/v1), etc."""
+    """OpenAI-compatible client. Works with OpenAI, MLX, LM Studio, Ollama (/v1), etc."""
 
-    def __init__(self, model, base_url="http://localhost:8080/v1"):
+    def __init__(self, model, base_url="http://localhost:8080/v1", api_key=None):
         self.model = model
         self.base_url = base_url.rstrip("/")
+        self.headers = {"Content-Type": "application/json"}
+        if api_key:
+            self.headers["Authorization"] = f"Bearer {api_key}"
 
     def is_running(self):
         try:
-            response = requests.get(f"{self.base_url}/models", timeout=2)
-            return response.status_code == 200
+            response = requests.get(f"{self.base_url}/models", headers=self.headers, timeout=2)
+            # 401 means the server is reachable but needs auth — treat as running
+            return response.status_code in (200, 401)
         except requests.exceptions.ConnectionError:
             print(
                 f"Warning: LLM service is not reachable at {self.base_url}.",
@@ -32,6 +36,7 @@ class LLMClient:
         try:
             response = requests.post(
                 f"{self.base_url}/chat/completions",
+                headers=self.headers,
                 json={
                     "model": self.model,
                     "messages": [{"role": "user", "content": prompt}],
@@ -71,7 +76,8 @@ class OllamaEngine:
         self.model = llm_config.get("model", "qwen2.5-coder:14b")
         self.sampling_rate = llm_config.get("sampling_rate", 0.01)
         base_url = llm_config.get("base_url", "http://localhost:8080/v1")
-        self.client = LLMClient(self.model, base_url)
+        api_key = llm_config.get("api_key") or os.environ.get("OPENAI_API_KEY")
+        self.client = LLMClient(self.model, base_url, api_key)
 
     def _number_code(self, code):
         """Prefixes each line of code with its line number."""
