@@ -141,12 +141,18 @@ def generate_reports(repo_path, json_path, html_path, config_path):
     nikui_results_dir = os.path.join(os.path.abspath(repo_path), "nikui_results")
     os.makedirs(nikui_results_dir, exist_ok=True)
 
-    repo_name = os.path.basename(os.path.abspath(repo_path)) or "repo"
-    timestamp = time.strftime("%Y%m%d_%H%M")
-
     # Use basename check to detect default path reliably
     if os.path.basename(html_path) == "analysis_report.html":
-        final_html_path = os.path.join(nikui_results_dir, f"{repo_name}_{timestamp}.html")
+        # Link to the JSON filename if it's in the results folder
+        if "nikui_results" in json_path:
+            json_base = os.path.splitext(os.path.basename(json_path))[0]
+            final_html_path = os.path.join(nikui_results_dir, f"{json_base}.html")
+        else:
+            repo_name = os.path.basename(os.path.abspath(repo_path)) or "repo"
+            timestamp = time.strftime("%Y%m%d_%H%M")
+            final_html_path = os.path.join(
+                nikui_results_dir, f"{repo_name}_{timestamp}.html"
+            )
     else:
         final_html_path = html_path
 
