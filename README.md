@@ -6,7 +6,7 @@
 
 - **🧠 Local LLM Analysis (Ollama):** Samples your code for deep semantic issues like SOLID violations, Silent Fails, and God Objects.
 - **🛡️ Full Static Scan:** Comprehensive security and best-practice analysis using Semgrep.
-- **👯 Code Duplication:** AST-based (Python) and structural (Go, TS, JS) duplication detection using Simhash.
+- **👯 Verified Duplication:** Two-tier structural duplication detection using Simhash candidates verified by local LLM (Ollama) for zero-noise results.
 - **📊 Objective Metrics:** Detects oversized files, complex functions, and forgotten debug logs.
 - **🔥 Hotspot Matrix:** Prioritizes fixes using the **Stench × Churn** formula.
 - **🌐 Interactive Report:** Generates a sortable HTML report with expandable findings.
