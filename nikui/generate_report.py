@@ -137,13 +137,15 @@ def generate_reports(repo_path, json_path, html_path, config_path):
     calculator = HotspotCalculator(config)
     sorted_files = calculator.calculate(findings)
 
-    results_dir = os.path.join(orig_cwd, "results")
+    # Ensure results directory exists inside the scanned repo
+    results_dir = os.path.join(os.path.abspath(repo_path), "results")
     os.makedirs(results_dir, exist_ok=True)
 
     repo_name = os.path.basename(os.path.abspath(repo_path)) or "repo"
     timestamp = time.strftime("%Y%m%d_%H%M")
 
-    if html_path == os.path.abspath("analysis_report.html"):
+    # Use basename check to detect default path reliably
+    if os.path.basename(html_path) == "analysis_report.html":
         final_html_path = os.path.join(results_dir, f"{repo_name}_{timestamp}.html")
     else:
         final_html_path = html_path
