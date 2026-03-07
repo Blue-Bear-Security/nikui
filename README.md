@@ -121,6 +121,22 @@ Nikui doesn't just list bugs; it prioritizes them using a **Hotspot Score**:
     - `duplication_verification.md`: Rubric for two-tier duplication verification.
 - **nikui_results/:** All scans and reports are automatically saved here with timestamps.
 
+## 🤝 Contributing
+
+Contributions are welcome! To get started:
+
+1. Fork the repo and create a branch
+2. Install dependencies: `uv sync`
+3. Run tests before and after your change: `uv run pytest`
+4. Run the linter: `uv run flake8 nikui/`
+5. Open a pull request with a clear description of what you changed and why
+
+Good areas to contribute:
+- New smell detection engines
+- Prompt improvements (`nikui/prompts/`)
+- Support for additional languages in the dependency engine
+- Report UI enhancements (`nikui/report_template.html`)
+
 ## 📄 License
 
 Apache 2.0
