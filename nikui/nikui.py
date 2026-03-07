@@ -39,7 +39,7 @@ def main():
         print(f"Error: {args.repo_path} is not a directory.")
         sys.exit(1)
     os.chdir(args.repo_path)
-    config = load_config(os.path.abspath(os.path.join(project_root, args.config)))
+    config = load_config(args.config)
     temp_dir = os.path.join(os.getcwd(), ".nikui_tmp")
     os.makedirs(temp_dir, exist_ok=True)
     print(
