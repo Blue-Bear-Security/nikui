@@ -104,6 +104,7 @@
             <span class="pill" onclick="toggleToolFilter(this, 'Ollama')">Ollama</span>
             <span class="pill" onclick="toggleToolFilter(this, 'Semgrep')">Semgrep</span>
             <span class="pill" onclick="toggleToolFilter(this, 'Duplication')">Duplication</span>
+            <span class="pill" onclick="toggleToolFilter(this, 'DependencyEngine')">Dependency</span>
             <span class="pill" onclick="toggleToolFilter(this, 'Flake8')">Flake8</span>
             <span class="pill" onclick="toggleToolFilter(this, 'GenericMetrics')">Metrics</span>
         </div>
@@ -118,7 +119,7 @@
                     <th onclick="sortTable(2)">Stench</th>
                     <th onclick="sortTable(3)">Findings</th>
                     <th onclick="sortTable(4)">Churn</th>
-                    <th onclick="sortTable(5)">Status</th>
+                    <th onclick="sortTable(5)">Debt Type</th>
                 </tr>
             </thead>
             <tbody>
@@ -217,13 +218,18 @@
                 label: 'Files',
                 data: chartData,
                 backgroundColor: (ctx) => {
-                    const score = chartData[ctx.dataIndex].score;
-                    return score > 500 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(59, 130, 246, 0.6)';
+                    if (ctx.dataIndex === undefined) return 'rgba(59, 130, 246, 0.6)';
+                    const type = chartData[ctx.dataIndex].debt_type;
+                    if (type.includes('Toxic')) return 'rgba(239, 68, 68, 0.8)'; // Red
+                    if (type.includes('Frozen')) return 'rgba(59, 130, 246, 0.5)'; // Blue
+                    if (type.includes('Quick Win')) return 'rgba(245, 158, 11, 0.8)'; // Yellow
+                    return 'rgba(16, 185, 129, 0.6)'; // Green (Healthy)
                 },
                 borderColor: 'transparent',
                 pointRadius: (ctx) => {
+                    if (ctx.dataIndex === undefined) return 6;
                     const score = chartData[ctx.dataIndex].score;
-                    return 5 + Math.min(score / 100, 15);
+                    return 5 + Math.min(score / 50, 15);
                 },
                 pointHoverRadius: 12
             }]
@@ -241,7 +247,7 @@
                     callbacks: {
                         label: function(ctx) {
                             const item = chartData[ctx.dataIndex];
-                            return [item.name, 'Score: ' + item.score, 'Stench: ' + item.y, 'Churn: ' + item.x];
+                            return [item.name, item.debt_type + ' (Score: ' + item.score + ')', 'Stench: ' + item.y, 'Churn: ' + item.x];
                         }
                     }
                 }

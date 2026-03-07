@@ -9,6 +9,7 @@ from nikui.engines.ollama_engine import OllamaEngine
 from nikui.engines.semgrep_engine import SemgrepEngine
 from nikui.engines.metrics_engine import MetricsEngine
 from nikui.engines.duplication_engine import DuplicationEngine
+from nikui.engines.dependency_engine import DependencyEngine
 
 
 def load_config(config_path):
@@ -27,8 +28,8 @@ def main():
     parser.add_argument(
         "--stages",
         nargs="+",
-        choices=["ollama", "semgrep", "metrics", "duplication"],
-        default=["ollama", "semgrep", "metrics", "duplication"],
+        choices=["ollama", "semgrep", "metrics", "duplication", "dependency"],
+        default=["ollama", "semgrep", "metrics", "duplication", "dependency"],
     )
     args = parser.parse_args()
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -46,21 +47,22 @@ def main():
         f"2. Security & Best Practices (Semgrep)\n"
         f"3. Objective Metrics (Flake8/Regex)\n"
         f"4. Code Duplication (Simhash)\n"
+        f"5. Dependency & Coupling (Graph)\n"
         f"Target: {args.repo_path}"
     )
 
     eligible_files = []
+    valid_exts = (".py", ".js", ".ts", ".tsx", ".go", ".yml", ".yaml", ".tf", ".sh")
     for root, dirs, files in os.walk("."):
         # Modify dirs in-place to skip excluded directories
         dirs[:] = [d for d in dirs if not is_excluded(os.path.join(root, d), config)]
-        
+
         for f in files:
             path = os.path.join(root, f)
-            if not is_excluded(path, config) and path.endswith(
-                (".py", ".js", ".ts", ".tsx", ".go")
+            if not is_excluded(path, config) and (
+                path.endswith(valid_exts) or f == "Dockerfile"
             ):
                 eligible_files.append(path)
-
     all_findings = []
 
     # Stage 1: Ollama
@@ -87,6 +89,11 @@ def main():
         duplication = DuplicationEngine(config)
         all_findings.extend(duplication.run_stage(eligible_files, ollama=ollama))
 
+    # Stage 5: Dependency
+    if "dependency" in args.stages:
+        dependency = DependencyEngine(config)
+        all_findings.extend(dependency.run_stage(eligible_files))
+
     # Ensure nikui_results directory exists
 
     nikui_results_dir = os.path.join(os.getcwd(), "nikui_results")
@@ -97,7 +104,9 @@ def main():
 
     # Default output path if none provided
     if args.output == "analysis_report.json":
-        final_output_path = os.path.join(nikui_results_dir, f"{repo_name}_{timestamp}.json")
+        final_output_path = os.path.join(
+            nikui_results_dir, f"{repo_name}_{timestamp}.json"
+        )
     else:
         final_output_path = os.path.abspath(os.path.join(project_root, args.output))
 

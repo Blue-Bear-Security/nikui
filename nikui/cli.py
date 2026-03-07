@@ -18,12 +18,14 @@ def main():
         "--config", default="config.json", help="Path to config file"
     )
     smell_parser.add_argument(
-        "--output", default=None, help="Output JSON file (defaults to nikui_results/ folder)"
+        "--output",
+        default=None,
+        help="Output JSON file (defaults to nikui_results/ folder)",
     )
     smell_parser.add_argument(
         "--stages",
         nargs="+",
-        choices=["ollama", "semgrep", "metrics", "duplication"],
+        choices=["ollama", "semgrep", "metrics", "duplication", "dependency"],
         help="Specific stages to run (default: all)",
     )
 
@@ -63,7 +65,9 @@ def main():
             import glob
 
             # Search in the target repository's results folder
-            repo_results_pattern = os.path.join(args.repo_path, "nikui_results", "*.json")
+            repo_results_pattern = os.path.join(
+                args.repo_path, "nikui_results", "*.json"
+            )
             results = glob.glob(repo_results_pattern)
             if results:
                 json_input = max(results, key=os.path.getmtime)

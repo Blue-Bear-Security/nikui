@@ -2,6 +2,7 @@ import pytest
 import os
 from nikui.engines.duplication_engine import DuplicationEngine
 
+
 @pytest.fixture
 def duplication_engine():
     config = {
@@ -9,6 +10,7 @@ def duplication_engine():
         "duplication": {"threshold": 0.80, "min_lines": 3},
     }
     return DuplicationEngine(config)
+
 
 def test_duplication_go_files(duplication_engine, tmp_path):
     go_code = """
@@ -31,10 +33,11 @@ func HelloWorld() {
 
     # Pass list of files
     findings = duplication_engine.run_stage([str(file1), str(file2)])
-    
+
     assert len(findings) >= 2
     assert any("main.go" in f["file_path"] for f in findings)
     assert any("other.go" in f["file_path"] for f in findings)
+
 
 def test_duplication_ts_files(duplication_engine, tmp_path):
     ts_code = """

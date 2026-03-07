@@ -5,7 +5,29 @@ from unittest.mock import patch, MagicMock
 from nikui.engines.ollama_engine import OllamaEngine
 from nikui.engines.semgrep_engine import SemgrepEngine
 from nikui.engines.metrics_engine import MetricsEngine
+from nikui.engines.dependency_engine import DependencyEngine
 from nikui.engines.duplication_engine import DuplicationEngine
+
+
+@pytest.fixture
+def dependency_engine():
+    return DependencyEngine({})
+
+
+def test_dependency_engine_extract_imports(dependency_engine, tmp_path):
+    code = """
+import nikui.utils
+from nikui.engines import ollama_engine
+import requests
+"""
+    f = tmp_path / "test.py"
+    f.write_text(code)
+    
+    imports = dependency_engine.extract_imports(str(f))
+    # Should only keep local nikui imports
+    assert "nikui.utils" in imports
+    assert "nikui.engines" in imports
+    assert "requests" not in imports
 
 
 @pytest.fixture
@@ -104,7 +126,10 @@ def test_parse_flake8_complexity(metrics_engine):
 def test_generic_file_scanner(metrics_engine, tmp_path):
     f = tmp_path / "long.py"
     f.write_text("a" * 200)
-    findings = metrics_engine.file_scanner.scan_file(str(f), max_line_length=120)
+    lines = ["a" * 200]
+    findings = metrics_engine.file_scanner.scan_lines(
+        str(f), lines, max_line_length=120
+    )
     assert len(findings) == 1
     assert "Line exceeds" in findings[0]["description"]
 
@@ -151,7 +176,9 @@ def some_logic():
     mock_ollama.client.is_running.return_value = True
     mock_ollama.verify_duplication.return_value = (False, "Boilerplate")
 
-    findings = duplication_engine.run_stage([str(file1), str(file2)], ollama=mock_ollama)
+    findings = duplication_engine.run_stage(
+        [str(file1), str(file2)], ollama=mock_ollama
+    )
 
     assert len(findings) == 0
     assert mock_ollama.verify_duplication.called

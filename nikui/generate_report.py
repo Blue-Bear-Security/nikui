@@ -55,25 +55,45 @@ class HotspotCalculator:
         return file_stench, file_counts
 
     def score_hotspots(self, file_stench, file_counts, git_metadata):
-        """Combines stench and churn into a prioritized list."""
+        """Combines stench and churn into a prioritized list with economic quadrants."""
         scored_files = []
         for path, stench in file_stench.items():
             churn, last_mod = git_metadata.get(path, (1, int(time.time())))
             hotspot_score = stench * churn
             scored_files.append(
-                (
-                    path,
-                    {
-                        "stench": stench,
-                        "findings": file_counts[path],
-                        "churn": churn,
-                        "last_mod": last_mod,
-                        "hotspot_score": hotspot_score,
-                    },
-                )
+                {
+                    "path": path,
+                    "stench": stench,
+                    "findings": file_counts[path],
+                    "churn": churn,
+                    "last_mod": last_mod,
+                    "hotspot_score": hotspot_score,
+                }
             )
 
-        return sorted(scored_files, key=lambda x: x[1]["hotspot_score"], reverse=True)
+        if not scored_files:
+            return []
+
+        # Calculate Averages for Quadrant mapping
+        avg_stench = sum(f["stench"] for f in scored_files) / len(scored_files)
+        avg_churn = sum(f["churn"] for f in scored_files) / len(scored_files)
+
+        for f in scored_files:
+            high_stench = f["stench"] > avg_stench
+            high_churn = f["churn"] > avg_churn
+
+            if high_stench and high_churn:
+                f["debt_type"] = "🔥 Toxic"
+            elif high_stench and not high_churn:
+                f["debt_type"] = "❄️ Frozen"
+            elif not high_stench and high_churn:
+                f["debt_type"] = "⚡ Quick Win"
+            else:
+                f["debt_type"] = "✅ Healthy"
+
+        # Return as list of tuples (path, stats) to maintain existing interface
+        sorted_stats = sorted(scored_files, key=lambda x: x["hotspot_score"], reverse=True)
+        return [(f["path"], f) for f in sorted_stats]
 
 
 class HtmlReporter:
@@ -101,7 +121,6 @@ class HtmlReporter:
 
         for idx, (path, stats) in enumerate(sorted_files):
             age_days = (current_time - stats["last_mod"]) // (24 * 3600)
-            status = "ACTIVE" if age_days < 90 else "LEGACY"
 
             chart_data.append(
                 {
@@ -109,6 +128,7 @@ class HtmlReporter:
                     "y": stats["stench"],
                     "score": int(stats["hotspot_score"]),
                     "name": path,
+                    "debt_type": stats.get("debt_type", "Unknown")
                 }
             )
 
@@ -116,7 +136,7 @@ class HtmlReporter:
                 f'<tr onclick="toggleFindings({idx})" class="file-row">'
                 f"<td>{path}</td><td><strong>{int(stats['hotspot_score'])}</strong></td>"
                 f"<td>{int(stats['stench'])}</td><td>{stats['findings']}</td>"
-                f"<td>{stats['churn']}</td><td>{status} ({age_days}d)</td></tr>"
+                f"<td>{stats['churn']}</td><td>{stats.get('debt_type', 'Unknown')}</td></tr>"
             )
 
             table_rows.append(
@@ -139,12 +159,14 @@ class HtmlReporter:
             "{{timestamp}}": time.strftime("%Y-%m-%d %H:%M:%S"),
             "{{total_files}}": str(len(sorted_files)),
             "{{total_findings}}": str(len(findings)),
-            "{{max_hotspot}}": str(int(sorted_files[0][1]["hotspot_score"]))
-            if sorted_files
-            else "0",
-            "{{avg_churn}}": f"{sum(s[1]['churn'] for s in sorted_files) / len(sorted_files):.1f}"
-            if sorted_files
-            else "0",
+            "{{max_hotspot}}": (
+                str(int(sorted_files[0][1]["hotspot_score"])) if sorted_files else "0"
+            ),
+            "{{avg_churn}}": (
+                f"{sum(s[1]['churn'] for s in sorted_files) / len(sorted_files):.1f}"
+                if sorted_files
+                else "0"
+            ),
             "{{chart_data_json}}": json.dumps(chart_data),
             "{{table_rows}}": "".join(table_rows),
         }
@@ -196,9 +218,7 @@ def generate_reports(repo_path, json_path, html_path, config_path):
         else:
             repo_name = os.path.basename(os.path.abspath(repo_path)) or "repo"
             timestamp = time.strftime("%Y%m%d_%H%M")
-            final_html_path = os.path.join(
-                results_dir, f"{repo_name}_{timestamp}.html"
-            )
+            final_html_path = os.path.join(results_dir, f"{repo_name}_{timestamp}.html")
     else:
         final_html_path = html_path
 

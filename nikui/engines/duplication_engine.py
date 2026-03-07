@@ -77,7 +77,7 @@ class DuplicationEngine:
                     norm = ast.dump(node)
                     # Extract raw code block
                     block_code = "\n".join(source_lines[node.lineno - 1 : end])
-                    
+
                     records.append(
                         {
                             "name": node.name,
@@ -85,7 +85,7 @@ class DuplicationEngine:
                             "lineno": node.lineno,
                             "source_lines": lines,
                             "hash": self._get_fingerprint(norm),
-                            "content": block_code
+                            "content": block_code,
                         }
                     )
             return records
@@ -113,7 +113,7 @@ class DuplicationEngine:
 
                 lineno = source[: match.start()].count("\n") + 1
                 normalized = UniversalNormalizer.clean_code(block_content, ext)
-                
+
                 # Heuristic to find the end of block by matching braces would be better,
                 # but for simplicity we use the split parts.
                 full_block = match.group(0) + block_content
@@ -125,7 +125,7 @@ class DuplicationEngine:
                         "lineno": lineno,
                         "source_lines": line_count,
                         "hash": self._get_fingerprint(normalized),
-                        "content": full_block
+                        "content": full_block,
                     }
                 )
 
@@ -138,7 +138,7 @@ class DuplicationEngine:
                     "lineno": 1,
                     "source_lines": source.count("\n"),
                     "hash": self._get_fingerprint(normalized),
-                    "content": source
+                    "content": source,
                 }
             )
 
@@ -184,7 +184,9 @@ class DuplicationEngine:
                     (
                         g
                         for g in candidates
-                        if any(id(blk) == id(a) or id(blk) == id(b) for blk in g["blocks"])
+                        if any(
+                            id(blk) == id(a) or id(blk) == id(b) for blk in g["blocks"]
+                        )
                     ),
                     None,
                 )
@@ -198,13 +200,16 @@ class DuplicationEngine:
                 seen.add(i)
                 seen.add(j)
 
-        print(f"Found {len(candidates)} candidate groups. Verifying with LLM...", file=sys.stderr)
-        
+        print(
+            f"Found {len(candidates)} candidate groups. Verifying with LLM...",
+            file=sys.stderr,
+        )
+
         final_groups = []
         for idx, group in enumerate(candidates):
             sys.stderr.write(f"\rVerifying: [{idx+1}/{len(candidates)}] groups...")
             sys.stderr.flush()
-            
+
             if ollama and ollama.client.is_running():
                 # Pick first two blocks to verify
                 blk_a = group["blocks"][0]
@@ -218,7 +223,7 @@ class DuplicationEngine:
             else:
                 # No LLM, trust Simhash
                 final_groups.append(group)
-        
+
         print("", file=sys.stderr)
 
         findings = []

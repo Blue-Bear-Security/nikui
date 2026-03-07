@@ -9,7 +9,10 @@ from nikui.utils import is_excluded
 @pytest.fixture
 def mock_config(tmp_path):
     config = {
-        "exclusions": {"directories": [".git", "node_modules"], "patterns": ["*.test.js"]},
+        "exclusions": {
+            "directories": [".git", "node_modules"],
+            "patterns": ["*.test.js"],
+        },
         "stench_weights": {
             "Security Vulnerability": 50,
             "Code Quality & Maintainability": 5,
