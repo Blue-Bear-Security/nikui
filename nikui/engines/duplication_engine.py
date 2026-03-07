@@ -2,13 +2,9 @@ import os
 import sys
 import re
 import ast
-import copy
 import warnings
-from dataclasses import dataclass, field
 from itertools import combinations
-from pathlib import Path
 from simhash import Simhash
-from nikui.utils import is_excluded
 
 
 class UniversalNormalizer:
