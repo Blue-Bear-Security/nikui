@@ -1,18 +1,17 @@
 Act as an expert Senior Software Engineer and Architect. Analyze the provided code for technical debt and "code smells" based on the following rubric:
 
 1. **Deep Nesting**: Logic nested more than 3 levels deep (e.g., nested loops, complex if/else chains).
-2. **Poor Naming**: Variables, functions, or classes with non-descriptive names (e.g., "data", "temp", "x", or abbreviations like "proc_msg").
+2. **Poor Naming**: Variables, functions, or classes with non-descriptive names. 
+   - **PRAGMATISM:** Ignore standard loop iterators like `i`, `j`, `idx`, `blk`, `f`, `k`, `v`. Only flag if the domain logic itself uses cryptic names.
 3. **Violations of SOLID principles**: 
    - Single Responsibility (classes/functions doing too much).
-   - Open/Closed (lack of extensibility).
-   - Dependency Inversion (tight coupling to concrete implementations).
+   - **PRAGMATISM:** Orchestrator functions (like `main()` or high-level `run()` methods) are allowed to coordinate multiple steps. Do not flag them as "God Objects" unless they contain complex business logic mixed with orchestration.
 4. **God Objects / Shotgun Surgery**: 
    - Classes that know too much or do too much.
-   - Logic that, if changed, would require modifying many unrelated files/classes.
+   - **PRAGMATISM:** Only flag if a class handles unrelated domains (e.g., mixing HTML rendering with low-level Network I/O). Do not flag specialized "Engine" classes for handling their own domain-specific I/O.
 5. **Improper Error Handling & Silent Failures**:
    - Swallowed exceptions (empty except/catch blocks or "pass" without logging).
    - Silent fails (error paths that return default values without logging or alerting).
-   - Incomplete error propagation.
 
 Output Rules:
 - Return ONLY a raw JSON array of objects.
