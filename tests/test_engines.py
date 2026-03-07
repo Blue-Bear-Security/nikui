@@ -22,7 +22,10 @@ import requests
 """
     f = tmp_path / "test.py"
     f.write_text(code)
-    
+
+    # eligible_paths must be seeded so local import detection works
+    dependency_engine.eligible_paths = {"nikui/utils.py", "nikui/engines/ollama_engine.py"}
+
     imports = dependency_engine.extract_imports(str(f))
     # Should only keep local nikui imports
     assert "nikui.utils" in imports

@@ -35,12 +35,14 @@ class LLMClient:
                 json={
                     "model": self.model,
                     "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1024,
                     "stream": False,
                 },
                 timeout=180,
             )
             response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"]
+            message = response.json()["choices"][0]["message"]
+            return message.get("content") or message.get("reasoning", "")
         except Exception as e:
             print(f"Error during LLM API request: {e}", file=sys.stderr)
             return ""
@@ -131,7 +133,7 @@ class OllamaEngine:
             return []
 
         raw_output = self.client.generate(prompt)
-        if not raw_output:
+        if not raw_output or not raw_output.strip():
             return []
 
         return self._parse_output(file_path, raw_output)

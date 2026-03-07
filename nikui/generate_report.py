@@ -117,11 +117,7 @@ class HtmlReporter:
 
         table_rows = []
         chart_data = []
-        current_time = int(time.time())
-
         for idx, (path, stats) in enumerate(sorted_files):
-            current_time = int(time.time())
-
             chart_data.append(
                 {
                     "x": stats["churn"],
