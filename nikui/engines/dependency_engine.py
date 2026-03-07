@@ -17,7 +17,8 @@ class DependencyEngine:
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
-        except: return []
+        except Exception:
+            return []
 
         if ext == ".py":
             # Matches: import nikui.utils OR from nikui import utils

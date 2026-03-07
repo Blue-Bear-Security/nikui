@@ -120,7 +120,7 @@ class HtmlReporter:
         current_time = int(time.time())
 
         for idx, (path, stats) in enumerate(sorted_files):
-            age_days = (current_time - stats["last_mod"]) // (24 * 3600)
+            current_time = int(time.time())
 
             chart_data.append(
                 {

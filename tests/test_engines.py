@@ -200,7 +200,7 @@ def test_metrics_engine_run_stage(mock_run, metrics_engine, tmp_path):
 @patch("requests.post")
 def test_ollama_engine_analyze_file(mock_post, ollama_engine, tmp_path):
     prompt_path = tmp_path / "prompt.md"
-    prompt_path.write_text("File: {filename}\nCode: {code}")
+    prompt_path.write_text("File: {filename}\nCode: {line_numbered_code}")
 
     source_file = tmp_path / "hello.py"
     source_file.write_text("print('hello')")
