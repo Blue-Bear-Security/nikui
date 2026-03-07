@@ -5,6 +5,7 @@ import ast
 import warnings
 from itertools import combinations
 from simhash import Simhash
+from nikui.utils import is_excluded
 
 
 class UniversalNormalizer:
@@ -65,6 +66,7 @@ class DuplicationEngine:
         try:
             tree = ast.parse(source)
             records = []
+            source_lines = source.splitlines()
             for node in ast.walk(tree):
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     end = getattr(node, "end_lineno", node.lineno)
@@ -74,6 +76,9 @@ class DuplicationEngine:
 
                     # Dump AST as a proxy for normalized text
                     norm = ast.dump(node)
+                    # Extract raw code block
+                    block_code = "\n".join(source_lines[node.lineno - 1 : end])
+                    
                     records.append(
                         {
                             "name": node.name,
@@ -81,6 +86,7 @@ class DuplicationEngine:
                             "lineno": node.lineno,
                             "source_lines": lines,
                             "hash": self._get_fingerprint(norm),
+                            "content": block_code
                         }
                     )
             return records
@@ -88,8 +94,6 @@ class DuplicationEngine:
             return []
 
     def _extract_generic_blocks(self, file_path, source, ext):
-        # Split by what looks like a function/method declaration
-        # This is a heuristic but better than whole-file hashing
         if ext == ".go":
             pattern = r"(?m)^func\s+.*\{"
         else:  # TS/JS
@@ -99,7 +103,6 @@ class DuplicationEngine:
 
         parts = re.split(pattern, source)
         records = []
-        # Find matches to get names and line numbers
         matches = list(re.finditer(pattern, source))
 
         for i, match in enumerate(matches):
@@ -111,6 +114,10 @@ class DuplicationEngine:
 
                 lineno = source[: match.start()].count("\n") + 1
                 normalized = UniversalNormalizer.clean_code(block_content, ext)
+                
+                # Heuristic to find the end of block by matching braces would be better,
+                # but for simplicity we use the split parts.
+                full_block = match.group(0) + block_content
 
                 records.append(
                     {
@@ -119,10 +126,10 @@ class DuplicationEngine:
                         "lineno": lineno,
                         "source_lines": line_count,
                         "hash": self._get_fingerprint(normalized),
+                        "content": full_block
                     }
                 )
 
-        # If no blocks found but file is large, hash the whole file
         if not records and source.count("\n") >= self.min_lines:
             normalized = UniversalNormalizer.clean_code(source, ext)
             records.append(
@@ -132,12 +139,13 @@ class DuplicationEngine:
                     "lineno": 1,
                     "source_lines": source.count("\n"),
                     "hash": self._get_fingerprint(normalized),
+                    "content": source
                 }
             )
 
         return records
 
-    def run_stage(self, eligible_files):
+    def run_stage(self, eligible_files, ollama=None):
         print(
             "\n--- [Stage 4/4] Multi-Language Duplication Analysis ---", file=sys.stderr
         )
@@ -154,14 +162,13 @@ class DuplicationEngine:
             all_blocks.extend(self.extract_blocks(path))
 
         print(
-            f"\nIndexed {len(all_blocks)} code blocks. Finding duplicates...",
+            f"\nIndexed {len(all_blocks)} code blocks. Finding candidates...",
             file=sys.stderr,
         )
 
-        groups = []
+        candidates = []
         seen = set()
 
-        # Similarity search
         for i, j in combinations(range(len(all_blocks)), 2):
             if i in seen and j in seen:
                 continue
@@ -177,7 +184,7 @@ class DuplicationEngine:
                 existing = next(
                     (
                         g
-                        for g in groups
+                        for g in candidates
                         if any(id(blk) == id(a) or id(blk) == id(b) for blk in g["blocks"])
                     ),
                     None,
@@ -188,13 +195,37 @@ class DuplicationEngine:
                             existing["blocks"].append(blk)
                     existing["similarity"] = min(existing["similarity"], sim)
                 else:
-                    groups.append({"similarity": sim, "blocks": [a, b]})
+                    candidates.append({"similarity": sim, "blocks": [a, b]})
                 seen.add(i)
                 seen.add(j)
 
+        print(f"Found {len(candidates)} candidate groups. Verifying with LLM...", file=sys.stderr)
+        
+        final_groups = []
+        for idx, group in enumerate(candidates):
+            sys.stderr.write(f"\rVerifying: [{idx+1}/{len(candidates)}] groups...")
+            sys.stderr.flush()
+            
+            if ollama and ollama.client.is_running():
+                # Pick first two blocks to verify
+                blk_a = group["blocks"][0]
+                blk_b = group["blocks"][1]
+                is_duplicate, reason = ollama.verify_duplication(
+                    blk_a["file"], blk_a["content"], blk_b["file"], blk_b["content"]
+                )
+                if is_duplicate:
+                    group["reason"] = reason
+                    final_groups.append(group)
+            else:
+                # No LLM, trust Simhash
+                final_groups.append(group)
+        
+        print("", file=sys.stderr)
+
         findings = []
-        for group in groups:
+        for group in final_groups:
             sim_pct = group["similarity"] * 100
+            reason = group.get("reason", "Structural similarity detected.")
             paths = [f"{b['file']}:{b['lineno']}" for b in group["blocks"]]
             for blk in group["blocks"]:
                 others = [p for p in paths if p != f"{blk['file']}:{blk['lineno']}"]
@@ -205,9 +236,9 @@ class DuplicationEngine:
                         "line": blk["lineno"],
                         "category": "Architectural & Design Flaw",
                         "severity": "High" if sim_pct > 98 else "Medium",
-                        "description": f"Code block '{blk['name']}' is {sim_pct:.1f}% similar to code at: {', '.join(others[:3])}",
+                        "description": f"[{sim_pct:.1f}% Match] {reason} (See: {', '.join(others[:2])})",
                     }
                 )
 
-        print(f"Found {len(groups)} duplication groups.", file=sys.stderr)
+        print(f"Verified {len(final_groups)} duplication groups.", file=sys.stderr)
         return findings

@@ -41,13 +41,13 @@ class OllamaClient:
 
 class PromptLoader:
     @staticmethod
-    def load(prompt_path, filename, code):
+    def load(prompt_path, **kwargs):
         if not os.path.exists(prompt_path):
             return None
         try:
             with open(prompt_path, "r", encoding="utf-8") as f:
                 template = f.read()
-            return template.format(filename=filename, code=code)
+            return template.format(**kwargs)
         except Exception as e:
             print(f"Error loading prompt: {e}", file=sys.stderr)
             return None
@@ -62,6 +62,29 @@ class OllamaEngine:
         self.sampling_rate = config.get("ollama", {}).get("sampling_rate", 0.01)
         self.client = OllamaClient(self.model)
 
+    def verify_duplication(self, file_a, code_a, file_b, code_b):
+        """Uses LLM to verify if two blocks are actually duplicates."""
+        prompt_path = os.path.join(self.project_root, "duplicate_prompt.md")
+        prompt = PromptLoader.load(
+            prompt_path, file_a=file_a, code_a=code_a, file_b=file_b, code_b=code_b
+        )
+        if not prompt:
+            return True, "Template missing, assuming duplicate"
+
+        raw_output = self.client.generate(prompt)
+        if not raw_output:
+            return True, "LLM failed, assuming duplicate"
+
+        try:
+            # Clean possible markdown wrap
+            clean_json = re.search(r"\{.*\}", raw_output, re.DOTALL)
+            if clean_json:
+                data = json.loads(clean_json.group(0))
+                return data.get("status") == "DUPLICATE", data.get("reason", "")
+        except:
+            pass
+        return True, "Parse failed, assuming duplicate"
+
     def analyze_file(self, file_path, prompt_path):
         """Analyzes a single file using the LLM."""
         try:
@@ -71,7 +94,7 @@ class OllamaEngine:
             print(f"Error reading file {file_path}: {e}", file=sys.stderr)
             return []
 
-        prompt = PromptLoader.load(prompt_path, file_path, code)
+        prompt = PromptLoader.load(prompt_path, filename=file_path, code=code)
         if not prompt:
             print(
                 f"Error: Prompt template not found or invalid at {prompt_path}",

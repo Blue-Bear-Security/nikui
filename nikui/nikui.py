@@ -64,10 +64,13 @@ def main():
     all_findings = []
 
     # Stage 1: Ollama
+    ollama = None
     if "ollama" in args.stages:
         print("\n--- [Stage 1/4] Deep Semantic Analysis (LLM) ---", file=sys.stderr)
         ollama = OllamaEngine(config, script_dir, project_root)
         all_findings.extend(ollama.run_stage(eligible_files))
+    elif "duplication" in args.stages:
+        ollama = OllamaEngine(config, script_dir, project_root)
 
     # Stage 2: Semgrep
     if "semgrep" in args.stages:
@@ -82,7 +85,7 @@ def main():
     # Stage 4: Duplication
     if "duplication" in args.stages:
         duplication = DuplicationEngine(config)
-        all_findings.extend(duplication.run_stage(eligible_files))
+        all_findings.extend(duplication.run_stage(eligible_files, ollama=ollama))
 
     # Ensure nikui_results directory exists
 

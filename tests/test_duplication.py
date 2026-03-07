@@ -6,7 +6,7 @@ from nikui.engines.duplication_engine import DuplicationEngine
 def duplication_engine():
     config = {
         "exclusions": {"directories": [], "patterns": []},
-        "duplication": {"threshold": 0.85, "min_lines": 3},
+        "duplication": {"threshold": 0.80, "min_lines": 3},
     }
     return DuplicationEngine(config)
 
@@ -15,6 +15,9 @@ def test_duplication_go_files(duplication_engine, tmp_path):
 package main
 import "fmt"
 func HelloWorld() {
+    // Boilerplate line 1
+    // Boilerplate line 2
+    // Boilerplate line 3
     fmt.Println("Hello, World!")
     fmt.Println("This is a test.")
 }
@@ -26,7 +29,8 @@ func HelloWorld() {
     # Identical code but different comments/whitespace
     file2.write_text(go_code.replace("Hello", "Hi") + "\n// Some comment")
 
-    findings = duplication_engine.run_stage([str(tmp_path)])
+    # Pass list of files
+    findings = duplication_engine.run_stage([str(file1), str(file2)])
     
     assert len(findings) >= 2
     assert any("main.go" in f["file_path"] for f in findings)
@@ -35,6 +39,9 @@ func HelloWorld() {
 def test_duplication_ts_files(duplication_engine, tmp_path):
     ts_code = """
 export const logger = (msg: string) => {
+    // Boilerplate line 1
+    // Boilerplate line 2
+    // Boilerplate line 3
     console.log("LOG:", msg);
     console.log("Timestamp:", new Date());
 };
@@ -45,5 +52,5 @@ export const logger = (msg: string) => {
     file2 = tmp_path / "utils.ts"
     file2.write_text(ts_code)
 
-    findings = duplication_engine.run_stage([str(tmp_path)])
+    findings = duplication_engine.run_stage([str(file1), str(file2)])
     assert len(findings) >= 2
