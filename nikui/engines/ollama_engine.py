@@ -4,6 +4,7 @@ import json
 import random
 import requests
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -32,25 +33,35 @@ class LLMClient:
             print(f"Warning: Unexpected error checking LLM service: {e}", file=sys.stderr)
             return False
 
-    def generate(self, prompt):
-        try:
-            response = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=self.headers,
-                json={
-                    "model": self.model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1024,
-                    "stream": False,
-                },
-                timeout=180,
-            )
-            response.raise_for_status()
-            message = response.json()["choices"][0]["message"]
-            return message.get("content") or message.get("reasoning", "")
-        except Exception as e:
-            print(f"Error during LLM API request: {e}", file=sys.stderr)
-            return ""
+    def generate(self, prompt, _retries=4):
+        for attempt in range(_retries):
+            try:
+                response = requests.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=self.headers,
+                    json={
+                        "model": self.model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 1024,
+                        "stream": False,
+                    },
+                    timeout=180,
+                )
+                if response.status_code == 429:
+                    wait = 2 ** attempt
+                    print(f"\nRate limited. Retrying in {wait}s...", file=sys.stderr)
+                    time.sleep(wait)
+                    continue
+                response.raise_for_status()
+                message = response.json()["choices"][0]["message"]
+                return message.get("content") or message.get("reasoning", "")
+            except requests.exceptions.HTTPError:
+                raise
+            except Exception as e:
+                print(f"Error during LLM API request: {e}", file=sys.stderr)
+                return ""
+        print("Error: LLM request failed after retries (rate limit).", file=sys.stderr)
+        return ""
 
 
 class PromptLoader:

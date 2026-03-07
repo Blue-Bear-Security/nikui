@@ -235,7 +235,7 @@ def test_llm_client_is_running(mock_get):
 
     mock_get.return_value = MagicMock(status_code=200)
     assert client.is_running() is True
-    mock_get.assert_called_with("http://localhost:8080/v1/models", timeout=2)
+    mock_get.assert_called_with("http://localhost:8080/v1/models", headers={"Content-Type": "application/json"}, timeout=2)
 
     mock_get.side_effect = Exception("conn refused")
     assert client.is_running() is False
