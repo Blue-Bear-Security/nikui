@@ -82,21 +82,35 @@ class HtmlReporter:
         with open(template_path, "r", encoding="utf-8") as f:
             template = f.read()
 
+        # Prepare Table Rows & Chart Data
         table_rows = []
+        chart_data = []
         current_time = int(time.time())
+        max_hotspot = 0
+        total_churn = 0
+
         for idx, (path, stats) in enumerate(sorted_files):
             age_days = (current_time - stats["last_mod"]) // (24 * 3600)
             status = "ACTIVE" if age_days < 90 else "LEGACY"
+            max_hotspot = max(max_hotspot, stats["hotspot_score"])
+            total_churn += stats["churn"]
+
+            chart_data.append({
+                "x": stats["churn"],
+                "y": stats["stench"],
+                "score": int(stats["hotspot_score"]),
+                "name": path
+            })
 
             table_rows.append(
-                f'<tr onclick="toggleFindings({idx})" style="cursor:pointer">'
+                f'<tr onclick="toggleFindings({idx})" class="file-row">'
                 f'<td>{path}</td><td><strong>{int(stats["hotspot_score"])}</strong></td>'
                 f'<td>{int(stats["stench"])}</td><td>{stats["findings"]}</td>'
                 f'<td>{stats["churn"]}</td><td>{status} ({age_days}d)</td></tr>'
             )
 
             table_rows.append(
-                f'<tr id="findings-{idx}" class="findings-row"><td colspan="6"><div style="padding:20px; border-left:3px solid #ccc; margin-left:20px;">'
+                f'<tr id="findings-{idx}" class="findings-row"><td colspan="6"><div class="findings-content">'
             )
             for f in sorted(
                 findings_by_file[path], key=lambda x: x.get("severity", "N/A")
@@ -108,10 +122,20 @@ class HtmlReporter:
                 )
             table_rows.append("</div></td></tr>")
 
-        html_content = template.replace(
-            "{{weights}}", json.dumps(self.config.get("stench_weights", {}))
-        )
-        html_content = html_content.replace("{{table_rows}}", "".join(table_rows))
+        # Replace placeholders
+        replacements = {
+            "{{timestamp}}": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "{{total_files}}": str(len(sorted_files)),
+            "{{total_findings}}": str(len(findings)),
+            "{{max_hotspot}}": str(int(max_hotspot)),
+            "{{avg_churn}}": f"{total_churn / len(sorted_files):.1f}" if sorted_files else "0",
+            "{{chart_data_json}}": json.dumps(chart_data),
+            "{{table_rows}}": "".join(table_rows)
+        }
+
+        html_content = template
+        for key, value in replacements.items():
+            html_content = html_content.replace(key, value)
 
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_content)
@@ -124,7 +148,7 @@ def generate_reports(repo_path, json_path, html_path, config_path):
 
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
-    
+
     print(f"Reading findings from: {json_path}", file=sys.stderr)
     with open(json_path, "r", encoding="utf-8") as f:
         raw_findings = json.load(f)

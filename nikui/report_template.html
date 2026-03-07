@@ -2,50 +2,207 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nikui Hotspot Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 20px; background: #f9fafb; }
-        .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .calc-box { background: #f8fafc; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 30px; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #f3f4f6; cursor: pointer; }
-        .findings-row { display: none; background: #fafafa; }
+        :root {
+            --bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text: #111827;
+            --border: #e5e7eb;
+            --primary: #3b82f6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #111827;
+                --card-bg: #1f2937;
+                --text: #f9fafb;
+                --border: #374151;
+            }
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: var(--bg); color: var(--text); line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* Header & Stats */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-card h3 { margin: 0; font-size: 14px; color: #6b7280; text-transform: uppercase; }
+        .stat-card p { margin: 5px 0 0; font-size: 24px; font-weight: bold; }
+
+        /* Chart Section */
+        .chart-container { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; height: 400px; }
+
+        /* Controls */
+        .controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
+        #searchInput { flex-grow: 1; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); }
+        
+        /* Table */
+        .table-wrapper { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f3f4f6; padding: 12px 15px; font-size: 13px; font-weight: 600; text-transform: uppercase; cursor: pointer; border-bottom: 1px solid var(--border); }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        tr.file-row:hover { background: rgba(59, 130, 246, 0.05); cursor: pointer; }
+        
+        /* Dark Mode overrides for table */
+        @media (prefers-color-scheme: dark) {
+            th { background: #374151; color: #9ca3af; }
+        }
+
+        /* Expandable Content */
+        .findings-row { display: none; background: rgba(0,0,0,0.02); }
         .findings-row.active { display: table-row; }
-        .badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-        .badge-high { background: #fee2e2; color: #991b1b; }
-        .badge-medium { background: #fef3c7; color: #92400e; }
-        .badge-low { background: #dcfce3; color: #166534; }
+        .findings-content { padding: 20px; border-left: 4px solid var(--primary); margin: 10px 20px; background: var(--card-bg); border-radius: 0 8px 8px 0; }
+
+        /* Badges */
+        .badge { padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .badge-high { background: #fee2e2; color: #b91c1c; }
+        .badge-medium { background: #fef3c7; color: #b45309; }
+        .badge-low { background: #d1fae5; color: #047857; }
+        .hotspot-tag { color: var(--danger); font-weight: bold; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🔥 Nikui Hotspot Report</h1>
-    <div class="calc-box">
-        <h3>🧮 Stench Calculation</h3>
-        <p>Weights: {{weights}}</p>
+    <header>
+        <h1>🐻 Nikui Bear Report</h1>
+        <div class="badge badge-medium">Analysis Time: {{timestamp}}</div>
+    </header>
+
+    <div class="stats-grid">
+        <div class="stat-card"><h3>Total Files</h3><p>{{total_files}}</p></div>
+        <div class="stat-card"><h3>Total Findings</h3><p>{{total_findings}}</p></div>
+        <div class="stat-card"><h3>Max Hotspot</h3><p>{{max_hotspot}}</p></div>
+        <div class="stat-card"><h3>Avg Churn</h3><p>{{avg_churn}}</p></div>
     </div>
-    <table id="hotspotTable">
-        <thead>
-            <tr>
-                <th>File Path</th>
-                <th>Hotspot Score</th>
-                <th>Stench</th>
-                <th>Findings</th>
-                <th>Churn</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{table_rows}}
-        </tbody>
-    </table>
+
+    <div class="chart-container">
+        <canvas id="hotspotChart"></canvas>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="Search files (e.g. 'models.py')..." onkeyup="filterTable()">
+        <div style="font-size: 12px; color: #6b7280;">Click rows to expand findings</div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="hotspotTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">File Path</th>
+                    <th onclick="sortTable(1)">Hotspot Score</th>
+                    <th onclick="sortTable(2)">Stench</th>
+                    <th onclick="sortTable(3)">Findings</th>
+                    <th onclick="sortTable(4)">Churn</th>
+                    <th onclick="sortTable(5)">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{table_rows}}
+            </tbody>
+        </table>
+    </div>
 </div>
+
 <script>
+    // 1. Toggle Findings
     function toggleFindings(i){
         const r = document.getElementById('findings-' + i);
         if (r) r.classList.toggle('active');
     }
+
+    // 2. Search Filter
+    function filterTable() {
+        const input = document.getElementById("searchInput");
+        const filter = input.value.toUpperCase();
+        const table = document.getElementById("hotspotTable");
+        const tr = table.getElementsByClassName("file-row");
+
+        for (let i = 0; i < tr.length; i++) {
+            const td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+                const txtValue = td.textContent || td.innerText;
+                tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                // Hide expanded findings if parent is hidden
+                const findingsRow = document.getElementById('findings-' + i);
+                if (findingsRow) findingsRow.classList.remove('active');
+            }
+        }
+    }
+
+    // 3. Simple Sort
+    function sortTable(n) {
+        const table = document.getElementById("hotspotTable");
+        let switching = true, shouldSwitch, i, dir = "desc", switchcount = 0;
+        while (switching) {
+            switching = false;
+            const rows = table.getElementsByClassName("file-row");
+            for (i = 0; i < (rows.length - 1); i++) {
+                shouldSwitch = false;
+                let x = rows[i].getElementsByTagName("TD")[n];
+                let y = rows[i + 1].getElementsByTagName("TD")[n];
+                let xVal = isNaN(parseFloat(x.innerText)) ? x.innerText.toLowerCase() : parseFloat(x.innerText);
+                let yVal = isNaN(parseFloat(y.innerText)) ? y.innerText.toLowerCase() : parseFloat(y.innerText);
+                
+                if (dir == "asc") {
+                    if (xVal > yVal) { shouldSwitch = true; break; }
+                } else if (dir == "desc") {
+                    if (xVal < yVal) { shouldSwitch = true; break; }
+                }
+            }
+            if (shouldSwitch) {
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                // Move findings row along with it
+                const findingsId = rows[i+1].getAttribute('onclick').match(/\d+/)[0];
+                const findingsRow = document.getElementById('findings-' + findingsId);
+                rows[i].parentNode.insertBefore(findingsRow, rows[i+1].nextSibling);
+                
+                switching = true;
+                switchcount ++;
+            } else {
+                if (switchcount == 0 && dir == "desc") { dir = "asc"; switching = true; }
+            }
+        }
+    }
+
+    // 4. Hotspot Chart
+    const ctx = document.getElementById('hotspotChart').getContext('2d');
+    const chartData = {{chart_data_json}};
+    
+    new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Files',
+                data: chartData,
+                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                borderColor: 'rgb(59, 130, 246)',
+                pointRadius: 6,
+                pointHoverRadius: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: 'Churn (Commits)' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { title: { display: true, text: 'Stench (Weighted Findings)' }, grid: { color: 'rgba(0,0,0,0.05)' } }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return chartData[ctx.dataIndex].name + ' (Score: ' + chartData[ctx.dataIndex].score + ')';
+                        }
+                    }
+                }
+            }
+        }
+    });
 </script>
 </body>
 </html>
