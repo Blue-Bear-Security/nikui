@@ -33,7 +33,7 @@ class LLMClient:
             print(f"Warning: Unexpected error checking LLM service: {e}", file=sys.stderr)
             return False
 
-    def generate(self, prompt, _retries=4):
+    def generate(self, prompt, _retries=6):
         for attempt in range(_retries):
             try:
                 response = requests.post(
