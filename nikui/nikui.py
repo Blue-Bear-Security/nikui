@@ -74,7 +74,7 @@ def main():
     # Stage 4: Duplication
     if "duplication" in args.stages:
         duplication = DuplicationEngine(config)
-        all_findings.extend(duplication.run_stage(["."]))
+        all_findings.extend(duplication.run_stage(eligible_files))
 
     # Ensure results directory exists
 

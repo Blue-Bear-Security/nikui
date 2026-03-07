@@ -22,11 +22,6 @@ class UniversalNormalizer:
         
         # 2. Normalize whitespace
         text = re.sub(r'\s+', ' ', text).strip()
-        
-        # 3. Very basic identifier anonymization (alphanumeric words > 3 chars)
-        # This helps catch renamed variables without needing a full parser
-        # text = re.sub(r'\b[a-zA-Z_][a-zA-Z0-9_]{3,}\b', 'v', text)
-        
         return text
 
 class DuplicationEngine:
@@ -46,29 +41,15 @@ class DuplicationEngine:
         ext = os.path.splitext(file_path)[1]
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()
+                content = f.read()
         except: return []
 
-        if len(lines) < self.min_lines:
-            return []
-
-        # For Python, we can still use AST for better precision if it parses
+        # For Python, use AST
         if ext == ".py":
-            return self._extract_python_ast(file_path, "".join(lines))
+            return self._extract_python_ast(file_path, content)
         
-        # For others (Go, TS), we use a sliding window of lines or simple bracket matching
-        # For now, let's treat the whole file as one block if it's small, 
-        # or split by top-level double-newlines for a generic approach.
-        content = "".join(lines)
-        normalized = UniversalNormalizer.clean_code(content, ext)
-        
-        return [{
-            "name": os.path.basename(file_path),
-            "file": file_path,
-            "lineno": 1,
-            "source_lines": len(lines),
-            "hash": self._get_fingerprint(normalized)
-        }]
+        # For Go/TS/JS, split by common "block" markers (basic heuristic)
+        return self._extract_generic_blocks(file_path, content, ext)
 
     def _extract_python_ast(self, file_path, source):
         try:
@@ -80,7 +61,6 @@ class DuplicationEngine:
                     lines = end - node.lineno + 1
                     if lines < self.min_lines: continue
                     
-                    # Dump AST as a proxy for normalized text
                     norm = ast.dump(node) 
                     records.append({
                         "name": node.name,
@@ -92,39 +72,84 @@ class DuplicationEngine:
             return records
         except: return []
 
-    def run_stage(self, scan_dirs):
+    def _extract_generic_blocks(self, file_path, source, ext):
+        # Split by what looks like a function/method declaration
+        # This is a heuristic but better than whole-file hashing
+        if ext == ".go":
+            pattern = r'(?m)^func\s+.*\{'
+        else: # TS/JS
+            pattern = r'(?m)^(?:export\s+)?(?:async\s+)?(?:function|const|let|class)\s+.*[={]'
+            
+        parts = re.split(pattern, source)
+        records = []
+        # Find matches to get names and line numbers
+        matches = list(re.finditer(pattern, source))
+        
+        for i, match in enumerate(matches):
+            if i + 1 < len(parts):
+                block_content = parts[i+1]
+                line_count = block_content.count('\n')
+                if line_count < self.min_lines: continue
+                
+                lineno = source[:match.start()].count('\n') + 1
+                normalized = UniversalNormalizer.clean_code(block_content, ext)
+                
+                records.append({
+                    "name": match.group(0).strip()[:40] + "...",
+                    "file": file_path,
+                    "lineno": lineno,
+                    "source_lines": line_count,
+                    "hash": self._get_fingerprint(normalized)
+                })
+        
+        # If no blocks found but file is large, hash the whole file
+        if not records and source.count('\n') >= self.min_lines:
+            normalized = UniversalNormalizer.clean_code(source, ext)
+            records.append({
+                "name": os.path.basename(file_path),
+                "file": file_path,
+                "lineno": 1,
+                "source_lines": source.count('\n'),
+                "hash": self._get_fingerprint(normalized)
+            })
+            
+        return records
+
+    def run_stage(self, eligible_files):
         print("\n--- [Stage 4/4] Multi-Language Duplication Analysis ---", file=sys.stderr)
         all_blocks = []
-        for d in scan_dirs:
-            if not os.path.isdir(d): continue
-            for root, _, files in os.walk(d):
-                if any(ex in root.split(os.sep) for ex in self.config.get("exclusions", {}).get("directories", [])):
-                    continue
-                for file in files:
-                    ext = os.path.splitext(file)[1]
-                    if ext in self.supported_exts:
-                        path = os.path.join(root, file)
-                        if not is_excluded(path, self.config):
-                            all_blocks.extend(self.extract_blocks(path))
+        
+        total = len(eligible_files)
+        print(f"Scanning {total} files for duplicates...", file=sys.stderr)
+        
+        for i, path in enumerate(eligible_files):
+            if i % 50 == 0 or i == total - 1:
+                sys.stderr.write(f"\rProgress: [{i+1}/{total}] files indexed...")
+                sys.stderr.flush()
+            
+            all_blocks.extend(self.extract_blocks(path))
+        
+        print(f"\nIndexed {len(all_blocks)} code blocks. Finding duplicates...", file=sys.stderr)
 
-        # Find groups
         groups = []
         seen = set()
+        
+        # Similarity search
         for i, j in combinations(range(len(all_blocks)), 2):
             if i in seen and j in seen: continue
             a, b = all_blocks[i], all_blocks[j]
             
-            # Don't compare a file to itself
-            if a['file'] == b['file'] and a['lineno'] == b['lineno']: continue
+            if a['file'] == b['file'] and abs(a['lineno'] - b['lineno']) < 5: continue
             
             dist = a['hash'].distance(b['hash'])
             sim = 1.0 - dist / 64
             
             if sim >= self.threshold:
-                existing = next((g for g in groups if any(blk is a or blk is b for blk in g['blocks'])), None)
+                existing = next((g for g in groups if any(id(blk) == id(a) or id(blk) == id(b) for blk in g['blocks'])), None)
                 if existing:
                     for blk in (a, b):
-                        if blk not in existing['blocks']: existing['blocks'].append(blk)
+                        if not any(id(x) == id(blk) for x in existing['blocks']):
+                            existing['blocks'].append(blk)
                     existing['similarity'] = min(existing['similarity'], sim)
                 else:
                     groups.append({"similarity": sim, "blocks": [a, b]})
@@ -144,4 +169,6 @@ class DuplicationEngine:
                     "severity": "High" if sim_pct > 98 else "Medium",
                     "description": f"Code block '{blk['name']}' is {sim_pct:.1f}% similar to code at: {', '.join(others[:3])}"
                 })
+        
+        print(f"Found {len(groups)} duplication groups.", file=sys.stderr)
         return findings
