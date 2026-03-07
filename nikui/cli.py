@@ -20,6 +20,12 @@ def main():
     smell_parser.add_argument(
         "--output", default=None, help="Output JSON file (defaults to results/ folder)"
     )
+    smell_parser.add_argument(
+        "--stages",
+        nargs="+",
+        choices=["ollama", "semgrep", "metrics", "duplication"],
+        help="Specific stages to run (default: all)",
+    )
 
     # Report subcommand
     report_parser = subparsers.add_parser(
@@ -48,6 +54,8 @@ def main():
             "--output",
             output_arg,
         ]
+        if args.stages:
+            sys.argv.extend(["--stages"] + args.stages)
         smell_main()
     elif args.command == "report":
         json_input = args.json

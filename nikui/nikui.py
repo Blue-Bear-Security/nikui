@@ -24,6 +24,12 @@ def main():
     parser.add_argument("repo_path")
     parser.add_argument("--config", default="config.json")
     parser.add_argument("--output", default="analysis_report.json")
+    parser.add_argument(
+        "--stages",
+        nargs="+",
+        choices=["ollama", "semgrep", "metrics", "duplication"],
+        default=["ollama", "semgrep", "metrics", "duplication"],
+    )
     args = parser.parse_args()
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir)
@@ -50,20 +56,25 @@ def main():
     all_findings = []
 
     # Stage 1: Ollama
-    print("\n--- [Stage 1/3] Deep Semantic Analysis (LLM) ---", file=sys.stderr)
-    ollama = OllamaEngine(config, script_dir, project_root)
-    all_findings.extend(ollama.run_stage(eligible_files))
+    if "ollama" in args.stages:
+        print("\n--- [Stage 1/4] Deep Semantic Analysis (LLM) ---", file=sys.stderr)
+        ollama = OllamaEngine(config, script_dir, project_root)
+        all_findings.extend(ollama.run_stage(eligible_files))
 
     # Stage 2: Semgrep
-    semgrep = SemgrepEngine(config, script_dir)
-    all_findings.extend(semgrep.run_stage(temp_dir))
+    if "semgrep" in args.stages:
+        semgrep = SemgrepEngine(config, script_dir)
+        all_findings.extend(semgrep.run_stage(temp_dir))
+
     # Stage 3: Metrics
-    metrics = MetricsEngine(config)
-    all_findings.extend(metrics.run_stage(["."]))
+    if "metrics" in args.stages:
+        metrics = MetricsEngine(config)
+        all_findings.extend(metrics.run_stage(["."]))
 
     # Stage 4: Duplication
-    duplication = DuplicationEngine(config)
-    all_findings.extend(duplication.run_stage(["."]))
+    if "duplication" in args.stages:
+        duplication = DuplicationEngine(config)
+        all_findings.extend(duplication.run_stage(["."]))
 
     # Ensure results directory exists
 
