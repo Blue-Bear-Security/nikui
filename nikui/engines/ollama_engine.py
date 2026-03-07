@@ -55,8 +55,9 @@ class LLMClient:
                 response.raise_for_status()
                 message = response.json()["choices"][0]["message"]
                 return message.get("content") or message.get("reasoning", "")
-            except requests.exceptions.HTTPError:
-                raise
+            except requests.exceptions.HTTPError as e:
+                print(f"Error: LLM request failed ({e.response.status_code} {e.response.reason}) for {self.base_url} — check your base_url and model in config.", file=sys.stderr)
+                return ""
             except Exception as e:
                 print(f"Error during LLM API request: {e}", file=sys.stderr)
                 return ""
@@ -219,7 +220,10 @@ class OllamaEngine:
                 completed += 1
                 sys.stderr.write(f"\rProgress: [{completed}/{sample_size}] files analyzed...")
                 sys.stderr.flush()
-                all_findings.extend(future.result())
+                try:
+                    all_findings.extend(future.result())
+                except Exception as e:
+                    print(f"\nError analyzing {futures[future]}: {e}", file=sys.stderr)
 
         print("", file=sys.stderr)
         return all_findings
