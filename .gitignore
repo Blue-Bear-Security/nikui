@@ -15,4 +15,4 @@ env/
 # Tools
 .vscode/
 .idea/
-results/
+nikui_results/

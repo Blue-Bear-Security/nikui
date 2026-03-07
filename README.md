@@ -48,7 +48,7 @@ uv run nikui smell <repo_path> --output my_scan.json
 uv run nikui report <repo_path>
 
 # Generate from a specific JSON file
-uv run nikui report <repo_path> --json results/my_scan.json --html report.html
+uv run nikui report <repo_path> --json nikui_results/my_scan.json --html report.html
 ```
 
 ## 🧮 How it Works: The Hotspot Matrix
@@ -65,7 +65,7 @@ Nikui doesn't just list bugs; it prioritizes them using a **Hotspot Score**:
 
 - **config.json:** Define exclusion patterns, tool-specific settings (like Flake8 ignores), and stench weights.
 - **prompt.md:** Customize the expert rubric used by the LLM to analyze your code.
-- **results/:** All scans and reports are automatically saved here with timestamps.
+- **nikui_results/:** All scans and reports are automatically saved here with timestamps.
 
 ## 📄 License
 

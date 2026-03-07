@@ -76,17 +76,17 @@ def main():
         duplication = DuplicationEngine(config)
         all_findings.extend(duplication.run_stage(eligible_files))
 
-    # Ensure results directory exists
+    # Ensure nikui_results directory exists
 
-    results_dir = os.path.join(os.getcwd(), "results")
-    os.makedirs(results_dir, exist_ok=True)
+    nikui_results_dir = os.path.join(os.getcwd(), "nikui_results")
+    os.makedirs(nikui_results_dir, exist_ok=True)
 
     repo_name = os.path.basename(os.path.abspath(args.repo_path)) or "repo"
     timestamp = time.strftime("%Y%m%d_%H%M")
 
     # Default output path if none provided
     if args.output == "analysis_report.json":
-        final_output_path = os.path.join(results_dir, f"{repo_name}_{timestamp}.json")
+        final_output_path = os.path.join(nikui_results_dir, f"{repo_name}_{timestamp}.json")
     else:
         final_output_path = os.path.abspath(os.path.join(project_root, args.output))
 

@@ -137,16 +137,16 @@ def generate_reports(repo_path, json_path, html_path, config_path):
     calculator = HotspotCalculator(config)
     sorted_files = calculator.calculate(findings)
 
-    # Ensure results directory exists inside the scanned repo
-    results_dir = os.path.join(os.path.abspath(repo_path), "results")
-    os.makedirs(results_dir, exist_ok=True)
+    # Ensure nikui_results directory exists inside the scanned repo
+    nikui_results_dir = os.path.join(os.path.abspath(repo_path), "nikui_results")
+    os.makedirs(nikui_results_dir, exist_ok=True)
 
     repo_name = os.path.basename(os.path.abspath(repo_path)) or "repo"
     timestamp = time.strftime("%Y%m%d_%H%M")
 
     # Use basename check to detect default path reliably
     if os.path.basename(html_path) == "analysis_report.html":
-        final_html_path = os.path.join(results_dir, f"{repo_name}_{timestamp}.html")
+        final_html_path = os.path.join(nikui_results_dir, f"{repo_name}_{timestamp}.html")
     else:
         final_html_path = html_path
 
