@@ -64,7 +64,9 @@ Nikui doesn't just list bugs; it prioritizes them using a **Hotspot Score**:
 ## ⚙️ Configuration
 
 - **config.json:** Define exclusion patterns, tool-specific settings (like Flake8 ignores), and stench weights.
-- **prompt.md:** Customize the expert rubric used by the LLM to analyze your code.
+- **nikui/prompts/:** Customize the expert rubrics used by the LLM:
+    - `smell_analysis.md`: Rubric for deep semantic code smells.
+    - `duplication_verification.md`: Rubric for two-tier duplication verification.
 - **nikui_results/:** All scans and reports are automatically saved here with timestamps.
 
 ## 📄 License

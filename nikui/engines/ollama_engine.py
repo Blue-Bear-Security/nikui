@@ -64,7 +64,11 @@ class OllamaEngine:
 
     def verify_duplication(self, file_a, code_a, file_b, code_b):
         """Uses LLM to verify if two blocks are actually duplicates."""
-        prompt_path = os.path.join(self.project_root, "duplicate_prompt.md")
+        prompt_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "prompts",
+            "duplication_verification.md",
+        )
         prompt = PromptLoader.load(
             prompt_path, file_a=file_a, code_a=code_a, file_b=file_b, code_b=code_b
         )
@@ -166,7 +170,9 @@ class OllamaEngine:
         )
 
         all_findings = []
-        prompt_path = os.path.join(self.project_root, "prompt.md")
+        prompt_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "prompts", "smell_analysis.md"
+        )
 
         for i, p in enumerate(sampled_files):
             sys.stderr.write(f"\rProgress: [{i+1}/{sample_size}] files analyzed...")
