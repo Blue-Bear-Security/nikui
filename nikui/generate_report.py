@@ -28,6 +28,10 @@ def get_git_metadata(file_path):
         )
         return commit_count, last_mod
     except Exception as e:
+        print(
+            f"Warning: Could not fetch git metadata for {file_path}: {e}",
+            file=sys.stderr,
+        )
         return 1, int(time.time())
 
 
@@ -95,18 +99,20 @@ class HtmlReporter:
             max_hotspot = max(max_hotspot, stats["hotspot_score"])
             total_churn += stats["churn"]
 
-            chart_data.append({
-                "x": stats["churn"],
-                "y": stats["stench"],
-                "score": int(stats["hotspot_score"]),
-                "name": path
-            })
+            chart_data.append(
+                {
+                    "x": stats["churn"],
+                    "y": stats["stench"],
+                    "score": int(stats["hotspot_score"]),
+                    "name": path,
+                }
+            )
 
             table_rows.append(
                 f'<tr onclick="toggleFindings({idx})" class="file-row">'
-                f'<td>{path}</td><td><strong>{int(stats["hotspot_score"])}</strong></td>'
-                f'<td>{int(stats["stench"])}</td><td>{stats["findings"]}</td>'
-                f'<td>{stats["churn"]}</td><td>{status} ({age_days}d)</td></tr>'
+                f"<td>{path}</td><td><strong>{int(stats['hotspot_score'])}</strong></td>"
+                f"<td>{int(stats['stench'])}</td><td>{stats['findings']}</td>"
+                f"<td>{stats['churn']}</td><td>{status} ({age_days}d)</td></tr>"
             )
 
             table_rows.append(
@@ -116,8 +122,11 @@ class HtmlReporter:
                 findings_by_file[path], key=lambda x: x.get("severity", "N/A")
             ):
                 sev = f.get("severity", "N/A")
+                tool = f.get("tool", "Unknown")
                 table_rows.append(
-                    f'<div style="margin-bottom:10px;"><span class="badge badge-{sev.lower()}">{sev}</span> '
+                    f'<div class="finding-item">'
+                    f'<span class="badge badge-{sev.lower()}">{sev}</span> '
+                    f'<span class="badge badge-tool">{tool}</span> '
                     f'<strong>{f.get("category")}</strong>: {f.get("description")}</div>'
                 )
             table_rows.append("</div></td></tr>")
@@ -128,9 +137,11 @@ class HtmlReporter:
             "{{total_files}}": str(len(sorted_files)),
             "{{total_findings}}": str(len(findings)),
             "{{max_hotspot}}": str(int(max_hotspot)),
-            "{{avg_churn}}": f"{total_churn / len(sorted_files):.1f}" if sorted_files else "0",
+            "{{avg_churn}}": f"{total_churn / len(sorted_files):.1f}"
+            if sorted_files
+            else "0",
             "{{chart_data_json}}": json.dumps(chart_data),
-            "{{table_rows}}": "".join(table_rows)
+            "{{table_rows}}": "".join(table_rows),
         }
 
         html_content = template
