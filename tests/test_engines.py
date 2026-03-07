@@ -2,7 +2,7 @@ import pytest
 import json
 import os
 from unittest.mock import patch, MagicMock
-from nikui.engines.ollama_engine import OllamaEngine
+from nikui.engines.ollama_engine import OllamaEngine, LLMClient
 from nikui.engines.semgrep_engine import SemgrepEngine
 from nikui.engines.metrics_engine import MetricsEngine
 from nikui.engines.dependency_engine import DependencyEngine
@@ -208,7 +208,7 @@ def test_ollama_engine_analyze_file(mock_post, ollama_engine, tmp_path):
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "response": '[{"category": "Deep Nesting", "severity": "Medium", "description": "test"}]'
+        "choices": [{"message": {"content": '[{"category": "Deep Nesting", "severity": "Medium", "description": "test"}]'}}]
     }
     mock_post.return_value = mock_response
 
@@ -217,3 +217,22 @@ def test_ollama_engine_analyze_file(mock_post, ollama_engine, tmp_path):
     assert len(findings) == 1
     assert findings[0]["description"] == "test"
     assert mock_post.called
+
+
+def test_strip_markdown_fence(ollama_engine):
+    assert ollama_engine._strip_markdown_fence('```json\n[]\n```') == '[]'
+    assert ollama_engine._strip_markdown_fence('```\n[]\n```') == '[]'
+    assert ollama_engine._strip_markdown_fence('[]') == '[]'
+    assert ollama_engine._strip_markdown_fence('  []  ') == '[]'
+
+
+@patch("requests.get")
+def test_llm_client_is_running(mock_get):
+    client = LLMClient("test-model", "http://localhost:8080/v1")
+
+    mock_get.return_value = MagicMock(status_code=200)
+    assert client.is_running() is True
+    mock_get.assert_called_with("http://localhost:8080/v1/models", timeout=2)
+
+    mock_get.side_effect = Exception("conn refused")
+    assert client.is_running() is False

@@ -4,38 +4,45 @@ import json
 import random
 import requests
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-class OllamaClient:
-    def __init__(self, model):
+class LLMClient:
+    """OpenAI-compatible client. Works with MLX, LM Studio, Ollama (/v1), etc."""
+
+    def __init__(self, model, base_url="http://localhost:8080/v1"):
         self.model = model
-        self.url = "http://localhost:11434/api/generate"
+        self.base_url = base_url.rstrip("/")
 
     def is_running(self):
         try:
-            response = requests.get("http://localhost:11434", timeout=2)
+            response = requests.get(f"{self.base_url}/models", timeout=2)
             return response.status_code == 200
         except requests.exceptions.ConnectionError:
             print(
-                "Warning: Ollama service is not reachable (connection refused).",
+                f"Warning: LLM service is not reachable at {self.base_url}.",
                 file=sys.stderr,
             )
             return False
         except Exception as e:
-            print(f"Warning: Unexpected error checking Ollama: {e}", file=sys.stderr)
+            print(f"Warning: Unexpected error checking LLM service: {e}", file=sys.stderr)
             return False
 
     def generate(self, prompt):
         try:
             response = requests.post(
-                self.url,
-                json={"model": self.model, "prompt": prompt, "stream": False},
+                f"{self.base_url}/chat/completions",
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False,
+                },
                 timeout=180,
             )
             response.raise_for_status()
-            return response.json().get("response", "")
+            return response.json()["choices"][0]["message"]["content"]
         except Exception as e:
-            print(f"Error during Ollama API request: {e}", file=sys.stderr)
+            print(f"Error during LLM API request: {e}", file=sys.stderr)
             return ""
 
 
@@ -58,9 +65,11 @@ class OllamaEngine:
         self.config = config
         self.script_dir = script_dir
         self.project_root = project_root
-        self.model = config.get("ollama", {}).get("model", "qwen2.5-coder:7b")
-        self.sampling_rate = config.get("ollama", {}).get("sampling_rate", 0.01)
-        self.client = OllamaClient(self.model)
+        llm_config = config.get("ollama", {})
+        self.model = llm_config.get("model", "qwen2.5-coder:14b")
+        self.sampling_rate = llm_config.get("sampling_rate", 0.01)
+        base_url = llm_config.get("base_url", "http://localhost:8080/v1")
+        self.client = LLMClient(self.model, base_url)
 
     def _number_code(self, code):
         """Prefixes each line of code with its line number."""
@@ -68,12 +77,12 @@ class OllamaEngine:
         numbered = [f"{i+1}: {line}" for i, line in enumerate(lines)]
         return "\n".join(numbered)
 
-    def _clean_json_content(self, text):
-        """Attempts to fix common LLM JSON formatting errors."""
-        # 1. Remove trailing commas in arrays/objects
-        text = re.sub(r",\s*([\]\}])", r"\1", text)
-        # 2. Fix unquoted property names if possible (risky, but sometimes needed)
-        # For now, we'll stick to trailing commas which are the #1 offender.
+    def _strip_markdown_fence(self, text):
+        """Remove a single markdown code fence wrapper if present."""
+        text = text.strip()
+        match = re.match(r"^```(?:json)?\s*([\s\S]*?)\s*```$", text)
+        if match:
+            return match.group(1).strip()
         return text
 
     def verify_duplication(self, file_a, code_a, file_b, code_b):
@@ -94,13 +103,9 @@ class OllamaEngine:
             return True, "LLM failed, assuming duplicate"
 
         try:
-            # Clean possible markdown wrap or conversational text
-            match = re.search(r"\{.*\}", raw_output, re.DOTALL)
-            if match:
-                clean_json = self._clean_json_content(match.group(0))
-                data = json.loads(clean_json)
-                return data.get("status") == "DUPLICATE", data.get("reason", "")
-        except Exception:
+            data = json.loads(self._strip_markdown_fence(raw_output))
+            return data.get("status") == "DUPLICATE", data.get("reason", "")
+        except (json.JSONDecodeError, AttributeError):
             pass
         return True, "Parse failed, assuming duplicate"
 
@@ -132,55 +137,41 @@ class OllamaEngine:
         return self._parse_output(file_path, raw_output)
 
     def _parse_output(self, file_path, raw_output):
-        findings = []
-        # Look for JSON array block - allows empty array []
-        json_array_regex = r"\[.*\]"
-        match = re.search(json_array_regex, raw_output, re.DOTALL)
-
-        if not match:
-            # Log snippet if it looks like there was an attempt to provide JSON but failed regex
-            if "[" in raw_output:
-                print(f"Warning: Failed to extract JSON array from Ollama output for {file_path}. Content started with: {raw_output[:100]}...", file=sys.stderr)
+        text = self._strip_markdown_fence(raw_output)
+        try:
+            file_findings = json.loads(text)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing LLM JSON for {file_path}: {e}", file=sys.stderr)
             return []
 
-        json_str = match.group(0)
-        try:
-            # Clean common syntax errors like trailing commas
-            clean_json = self._clean_json_content(json_str)
-            file_findings = json.loads(clean_json)
-            
-            if isinstance(file_findings, list):
-                for fnd in file_findings:
-                    # Map 'line_range' to 'line' for backward compatibility with dashboard
-                    line_val = fnd.get("line_range", "N/A")
-                    try:
-                        # Try to extract the first number from "10-20" or similar
-                        line_display = int(str(line_val).split("-")[0])
-                    except:
-                        line_display = None
+        if not isinstance(file_findings, list):
+            print(f"Warning: LLM output for {file_path} is not a JSON array", file=sys.stderr)
+            return []
 
-                    findings.append(
-                        {
-                            "tool": "Ollama",
-                            "file_path": file_path,
-                            "line": line_display,
-                            "line_range": line_val,
-                            "category": fnd.get("category", "Code Quality"),
-                            "severity": fnd.get("severity", "Medium"),
-                            "description": fnd.get("description", ""),
-                        }
-                    )
-                return findings
-        except Exception as e:
-            print(f"Error parsing Ollama JSON for {file_path}: {e}", file=sys.stderr)
-            print(f"Problematic JSON snippet: {json_str[:200]}...", file=sys.stderr)
-
+        findings = []
+        for fnd in file_findings:
+            line_val = fnd.get("line_range", "N/A")
+            try:
+                line_display = int(str(line_val).split("-")[0])
+            except (ValueError, AttributeError):
+                line_display = None
+            findings.append(
+                {
+                    "tool": "Ollama",
+                    "file_path": file_path,
+                    "line": line_display,
+                    "line_range": line_val,
+                    "category": fnd.get("category", "Code Quality"),
+                    "severity": fnd.get("severity", "Medium"),
+                    "description": fnd.get("description", ""),
+                }
+            )
         return findings
 
     def run_stage(self, eligible_files):
         """Orchestrates the LLM stage for a list of files."""
         if not self.client.is_running():
-            print("⚠️  Ollama not running. Skipping stage.", file=sys.stderr)
+            print("⚠️  LLM service not running. Skipping stage.", file=sys.stderr)
             return []
 
         sample_size = (
@@ -195,15 +186,21 @@ class OllamaEngine:
             file=sys.stderr,
         )
 
-        all_findings = []
         prompt_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "prompts", "smell_analysis.md"
         )
 
-        for i, p in enumerate(sampled_files):
-            sys.stderr.write(f"\rProgress: [{i+1}/{sample_size}] files analyzed...")
-            sys.stderr.flush()
-            all_findings.extend(self.analyze_file(p, prompt_path))
+        all_findings = []
+        completed = 0
+        workers = self.config.get("ollama", {}).get("workers", 4)
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(self.analyze_file, p, prompt_path): p for p in sampled_files}
+            for future in as_completed(futures):
+                completed += 1
+                sys.stderr.write(f"\rProgress: [{completed}/{sample_size}] files analyzed...")
+                sys.stderr.flush()
+                all_findings.extend(future.result())
 
         print("", file=sys.stderr)
         return all_findings

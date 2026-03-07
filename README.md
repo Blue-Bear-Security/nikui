@@ -4,22 +4,16 @@
 
 ## 🚀 Features
 
-- **🧠 Local LLM Analysis (Ollama):** Samples your code for deep semantic issues like SOLID violations, Silent Fails, and God Objects.
+- **🧠 Local LLM Analysis:** Samples your code for deep semantic issues like SOLID violations, Silent Fails, and God Objects. Works with any OpenAI-compatible backend (MLX, LM Studio, Ollama).
 - **🛡️ Full Static Scan:** Comprehensive security and best-practice analysis using Semgrep.
-- **👯 Verified Duplication:** Two-tier structural duplication detection using Simhash candidates verified by local LLM (Ollama) for zero-noise results.
+- **👯 Verified Duplication:** Two-tier structural duplication detection using Simhash candidates verified by local LLM for zero-noise results.
 - **📊 Objective Metrics:** Detects oversized files, complex functions, and forgotten debug logs.
 - **🔥 Hotspot Matrix:** Prioritizes fixes using the **Stench × Churn** formula.
 - **🌐 Interactive Report:** Generates a sortable HTML report with expandable findings.
 
 ## 🛠️ Setup
 
-### 1. Install & Prep Ollama
-Nikui requires **Ollama** to be running locally for deep analysis.
-- **Install:** [ollama.com](https://ollama.com)
-- **Pull Model:** `ollama pull qwen2.5-coder:7b` (or your preferred model configured in `config.json`)
-- **Serve:** `ollama serve` (keep this running in a separate terminal)
-
-### 2. Install Dependencies
+### 1. Install Dependencies
 ```bash
 # Install uv if you haven't
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -27,6 +21,49 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install project
 uv sync
 ```
+
+### 2. Start a Local LLM Backend
+
+Nikui uses any **OpenAI-compatible** local LLM server. Set `base_url` and `model` in `config.json` to match your backend.
+
+#### Option A: MLX (Apple Silicon — recommended for Mac)
+```bash
+pip install mlx-lm
+mlx_lm.server --model mlx-community/Qwen2.5-Coder-14B-Instruct-4bit --port 8080
+```
+`config.json`:
+```json
+"ollama": {
+  "base_url": "http://localhost:8080/v1",
+  "model": "mlx-community/Qwen2.5-Coder-14B-Instruct-4bit"
+}
+```
+
+#### Option B: LM Studio (Windows / Linux / Mac)
+1. Download [LM Studio](https://lmstudio.ai), load a model, and start the local server (default port 1234).
+
+`config.json`:
+```json
+"ollama": {
+  "base_url": "http://localhost:1234/v1",
+  "model": "qwen2.5-coder-14b-instruct"
+}
+```
+
+#### Option C: Ollama
+```bash
+ollama pull qwen2.5-coder:14b
+ollama serve
+```
+`config.json`:
+```json
+"ollama": {
+  "base_url": "http://localhost:11434/v1",
+  "model": "qwen2.5-coder:14b"
+}
+```
+
+> **LLM is optional.** If no backend is running, the semantic analysis and duplication verification stages are skipped gracefully.
 
 ## 📖 Usage
 
