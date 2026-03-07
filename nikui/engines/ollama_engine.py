@@ -62,6 +62,12 @@ class OllamaEngine:
         self.sampling_rate = config.get("ollama", {}).get("sampling_rate", 0.01)
         self.client = OllamaClient(self.model)
 
+    def _number_code(self, code):
+        """Prefixes each line of code with its line number."""
+        lines = code.splitlines()
+        numbered = [f"{i+1}: {line}" for i, line in enumerate(lines)]
+        return "\n".join(numbered)
+
     def verify_duplication(self, file_a, code_a, file_b, code_b):
         """Uses LLM to verify if two blocks are actually duplicates."""
         prompt_path = os.path.join(
@@ -98,7 +104,11 @@ class OllamaEngine:
             print(f"Error reading file {file_path}: {e}", file=sys.stderr)
             return []
 
-        prompt = PromptLoader.load(prompt_path, filename=file_path, code=code)
+        # New: Send code with line numbers for the improved prompt
+        numbered_code = self._number_code(code)
+        prompt = PromptLoader.load(
+            prompt_path, filename=file_path, line_numbered_code=numbered_code
+        )
         if not prompt:
             print(
                 f"Error: Prompt template not found or invalid at {prompt_path}",
@@ -114,41 +124,40 @@ class OllamaEngine:
 
     def _parse_output(self, file_path, raw_output):
         findings = []
-        json_array_regex = r"\[\s*(?:\{.*?\}(?:,\s*\{.*?\})*)?\s*\]"
-        matches = re.finditer(json_array_regex, raw_output, re.DOTALL)
+        # Look for JSON array block
+        json_array_regex = r"\[\s*\{.*\}\s*\]"
+        match = re.search(json_array_regex, raw_output, re.DOTALL)
 
-        category_map = {
-            "Deep Nesting": "Code Quality & Maintainability",
-            "Poor Naming": "Best Practices & Conventions",
-            "Violations of SOLID principles": "Architectural & Design Flaw",
-            "God Objects / Shotgun Surgery": "Architectural & Design Flaw",
-            "Improper Error Handling & Silent Failures": "Improper Error Handling & Silent Failures",
-        }
+        if not match:
+            return []
 
-        for match in matches:
-            try:
-                file_findings = json.loads(match.group(0))
-                if isinstance(file_findings, list):
-                    for fnd in file_findings:
-                        findings.append(
-                            {
-                                "tool": "Ollama",
-                                "file_path": file_path,
-                                "line": None,
-                                "category": category_map.get(
-                                    fnd.get("category"),
-                                    "Code Quality & Maintainability",
-                                ),
-                                "severity": fnd.get("severity", "Medium"),
-                                "description": fnd.get("description", ""),
-                            }
-                        )
-                    return findings
-            except Exception as e:
-                print(
-                    f"Error parsing Ollama result for {file_path}: {e}", file=sys.stderr
-                )
-                continue
+        try:
+            file_findings = json.loads(match.group(0))
+            if isinstance(file_findings, list):
+                for fnd in file_findings:
+                    # Map 'line_range' to 'line' for backward compatibility with dashboard
+                    line_val = fnd.get("line_range", "N/A")
+                    try:
+                        # Try to extract the first number from "10-20" or similar
+                        line_display = int(str(line_val).split("-")[0])
+                    except:
+                        line_display = None
+
+                    findings.append(
+                        {
+                            "tool": "Ollama",
+                            "file_path": file_path,
+                            "line": line_display,
+                            "line_range": line_val,
+                            "category": fnd.get("category", "Code Quality"),
+                            "severity": fnd.get("severity", "Medium"),
+                            "description": fnd.get("description", ""),
+                        }
+                    )
+                return findings
+        except Exception as e:
+            print(f"Error parsing Ollama result for {file_path}: {e}", file=sys.stderr)
+
         return findings
 
     def run_stage(self, eligible_files):
