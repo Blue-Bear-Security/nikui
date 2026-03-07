@@ -62,10 +62,13 @@ def main():
         if not json_input:
             import glob
 
-            results = glob.glob("results/*.json")
+            # Search in the target repository's results folder
+            repo_results_pattern = os.path.join(args.repo_path, "results", "*.json")
+            results = glob.glob(repo_results_pattern)
             if results:
                 json_input = max(results, key=os.path.getmtime)
             else:
+                # Fallback to local if repo-specific results aren't found
                 json_input = "analysis_report.json"
 
         html_output = args.html if args.html else "analysis_report.html"
