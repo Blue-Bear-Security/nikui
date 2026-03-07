@@ -123,7 +123,7 @@ Nikui doesn't just list bugs; it prioritizes them using a **Hotspot Score**:
 
 ## 📄 License
 
-MIT
+Apache 2.0
 
 ---
 Created by [**amirshk**](https://github.com/amirshk)
