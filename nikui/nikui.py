@@ -45,7 +45,10 @@ def main():
     )
 
     eligible_files = []
-    for root, _, files in os.walk("."):
+    for root, dirs, files in os.walk("."):
+        # Modify dirs in-place to skip excluded directories
+        dirs[:] = [d for d in dirs if not is_excluded(os.path.join(root, d), config)]
+        
         for f in files:
             path = os.path.join(root, f)
             if not is_excluded(path, config) and path.endswith(
@@ -69,7 +72,7 @@ def main():
     # Stage 3: Metrics
     if "metrics" in args.stages:
         metrics = MetricsEngine(config)
-        all_findings.extend(metrics.run_stage(["."]))
+        all_findings.extend(metrics.run_stage(eligible_files))
 
     # Stage 4: Duplication
     if "duplication" in args.stages:

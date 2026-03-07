@@ -97,43 +97,30 @@ class MetricsEngine:
         self.flake8_parser = Flake8Parser(config)
         self.file_scanner = GenericFileScanner(config)
 
-    def run_stage(self, scan_dirs):
+    def run_stage(self, eligible_files):
         print(
-            "\n--- [Stage 3/3] Objective Metrics & Linting (Static) ---",
+            "\n--- [Stage 3/4] Objective Metrics & Linting (Static) ---",
             file=sys.stderr,
         )
         all_findings = []
 
         # 1. Flake8
-        exclude_list = ",".join(self.config.get("exclusions", {}).get("directories", []))
-        ignore_list = ",".join(self.config.get("flake8", {}).get("ignore", []))
-        ignore_arg = f"--ignore={ignore_list}" if ignore_list else ""
+        # Filter only python files for flake8
+        py_files = [f for f in eligible_files if f.endswith(".py")]
+        if py_files:
+            # We pass the files explicitly to ensure consistency with our exclusions
+            # Using a chunked approach if there are too many files (simplified for now)
+            ignore_list = ",".join(self.config.get("flake8", {}).get("ignore", []))
+            ignore_arg = f"--ignore={ignore_list}" if ignore_list else ""
+            
+            # Run flake8 on the batch of files
+            files_arg = " ".join(py_files)
+            flake8_cmd = f"flake8 --max-complexity=10 {ignore_arg} {files_arg}"
+            stdout, _ = CommandRunner.run(flake8_cmd)
+            all_findings.extend(self.flake8_parser.parse(stdout))
 
-        for d in scan_dirs:
-            if os.path.isdir(d):
-                flake8_cmd = (
-                    f"flake8 --max-complexity=10 --exclude={exclude_list} {ignore_arg} {d}"
-                )
-                stdout, _ = CommandRunner.run(flake8_cmd)
-                all_findings.extend(self.flake8_parser.parse(stdout))
-
-
-        # 2. Generic Metrics
-        for d in scan_dirs:
-            if not os.path.isdir(d):
-                continue
-            for root, _, files in os.walk(d):
-                dirs_to_skip = [
-                    dr
-                    for dr in self.config.get("exclusions", {}).get("directories", [])
-                    if dr in root.split(os.sep)
-                ]
-                if dirs_to_skip:
-                    continue
-
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    if file.endswith((".py", ".ts", ".tsx", ".js", ".go")):
-                        all_findings.extend(self.file_scanner.scan_file(file_path))
+        # 2. Generic Metrics (All languages)
+        for file_path in eligible_files:
+            all_findings.extend(self.file_scanner.scan_file(file_path))
 
         return all_findings
