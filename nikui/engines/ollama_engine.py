@@ -133,8 +133,8 @@ class OllamaEngine:
 
     def _parse_output(self, file_path, raw_output):
         findings = []
-        # Look for JSON array block - more robust regex (non-greedy)
-        json_array_regex = r"\[\s*\{.*\}\s*\]"
+        # Look for JSON array block - allows empty array []
+        json_array_regex = r"\[.*\]"
         match = re.search(json_array_regex, raw_output, re.DOTALL)
 
         if not match:
