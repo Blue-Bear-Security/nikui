@@ -3,7 +3,7 @@ name = "nikui"
 version = "0.1.0"
 description = "A bear-powered code smell and technical debt analyzer with hotspot prioritization and two-tier duplication detection (Simhash + Ollama)."
 authors = [
-    { name = "amirshk" }
+    { name = "amir shaked" }
 ]
 requires-python = ">=3.13"
 dependencies = [
