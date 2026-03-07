@@ -48,7 +48,7 @@ class LLMClient:
                     timeout=180,
                 )
                 if response.status_code == 429:
-                    wait = 2 ** attempt
+                    wait = int(response.headers.get("Retry-After", 2 ** attempt))
                     print(f"\nRate limited. Retrying in {wait}s...", file=sys.stderr)
                     time.sleep(wait)
                     continue
