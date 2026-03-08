@@ -42,7 +42,7 @@ def get_modified_files(base):
 
 def main():
     parser = argparse.ArgumentParser(prog="nikui")
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Smell command
     smell_parser = subparsers.add_parser("smell")
@@ -57,29 +57,18 @@ def main():
         default=["ollama", "semgrep", "metrics", "duplication", "dependency"],
     )
 
-    # Report command (for completeness, though we usually run report separately)
+    # Report command
     report_parser = subparsers.add_parser("report")
     report_parser.add_argument("repo_path")
     report_parser.add_argument("--json")
     report_parser.add_argument("--html", default="analysis_report.html")
+    report_parser.add_argument("--config", default=".nikui/config.json")
 
     args = parser.parse_args()
 
-    # Backwards compatibility for the original "nikui <repo_path>" call
-    if not args.command and hasattr(args, "repo_path"):
-        # This handles the case where no subcommand was provided but repo_path was
-        # However, argparse with subparsers usually requires a subcommand.
-        # We'll default to 'smell' if repo_path is provided as a positional.
-        pass
-
-    # If no command provided, show help
-    if not args.command:
-        parser.print_help()
-        return
-
     if args.command == "report":
         from nikui.generate_report import generate_reports
-        generate_reports(args.repo_path, json_path=args.json, html_path=args.html)
+        generate_reports(args.repo_path, json_path=args.json, html_path=args.html, config_path=args.config)
         return
 
     # 'smell' command logic
