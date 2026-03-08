@@ -7,7 +7,9 @@
 
 ![Nikui Demo](demo.gif)
 
-**Nikui** is a code smell and technical debt analyzer. It scans a repository and produces a prioritized hotspot report by combining LLM semantic analysis, static security scanning, structural duplication detection, and objective code metrics.
+**Stop guessing where your technical debt is.** Nikui combines LLM semantic reasoning with Git churn to prioritize exactly which files are rotting and need your attention.
+
+**Nikui** is a code smell and technical debt analyzer that produces a prioritized hotspot report by combining LLM semantic analysis, static security scanning, structural duplication detection, and objective code metrics.
 
 ## Example Output
 
