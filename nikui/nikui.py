@@ -61,14 +61,15 @@ def main():
     report_parser = subparsers.add_parser("report")
     report_parser.add_argument("repo_path")
     report_parser.add_argument("--json")
-    report_parser.add_argument("--html", default="analysis_report.html")
+    report_parser.add_argument("--html", default=None)
+    report_parser.add_argument("--markdown", default=None)
     report_parser.add_argument("--config", default=".nikui/config.json")
 
     args = parser.parse_args()
 
     if args.command == "report":
         from nikui.generate_report import generate_reports
-        generate_reports(args.repo_path, json_path=args.json, html_path=args.html, config_path=args.config)
+        generate_reports(args.repo_path, json_path=args.json, html_path=args.html, config_path=args.config, markdown_path=args.markdown)
         return
 
     # 'smell' command logic

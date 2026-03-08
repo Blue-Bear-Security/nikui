@@ -175,7 +175,47 @@ class HtmlReporter:
             f.write(html_content)
 
 
-def generate_reports(repo_path, json_path, html_path, config_path):
+class MarkdownReporter:
+    """Handles the rendering of a concise Markdown summary for GitHub Actions."""
+
+    def __init__(self, config):
+        self.config = config
+
+    def render(self, sorted_files, findings, markdown_path):
+        if not sorted_files:
+            summary = "### ✅ Nikui: No technical debt found in this PR!"
+        else:
+            high_severity = [f for f in findings if f.get("severity") == "High"]
+            medium_severity = [f for f in findings if f.get("severity") == "Medium"]
+            
+            summary = [
+                "### 🛡️ Nikui Stench Guard Summary",
+                f"Found **{len(findings)}** total issues in this PR.",
+                f"- 🔴 **High Severity:** {len(high_severity)}",
+                f"- 🟡 **Medium Severity:** {len(medium_severity)}",
+                "",
+                "| File | 🔥 Hotspot | Stench | Churn | Status |",
+                "| :--- | :---: | :---: | :---: | :--- |"
+            ]
+            
+            # Show top 10 hotspots
+            for path, stats in sorted_files[:10]:
+                summary.append(
+                    f"| `{path}` | **{int(stats['hotspot_score'])}** | {int(stats['stench'])} | {stats['churn']} | {stats.get('debt_type', 'Unknown')} |"
+                )
+            
+            if len(sorted_files) > 10:
+                summary.append(f"\n*...and {len(sorted_files) - 10} more files.*")
+
+            summary.append("\n#### 🚩 Top 5 High-Impact Findings")
+            for f in sorted(high_severity, key=lambda x: x.get("file_path", ""))[:5]:
+                summary.append(f"- **{f.get('category')}** in `{f.get('file_path')}`: {f.get('description')}")
+
+        with open(markdown_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(summary))
+
+
+def generate_reports(repo_path, json_path, html_path, config_path, markdown_path=None):
     if not os.path.exists(config_path):
         print(f"Error: {config_path} missing")
         sys.exit(1)
@@ -207,21 +247,28 @@ def generate_reports(repo_path, json_path, html_path, config_path):
     results_dir = os.path.join(os.path.abspath(repo_path), "nikui_results")
     os.makedirs(results_dir, exist_ok=True)
 
-    if os.path.basename(html_path) == "analysis_report.html":
-        if "nikui_results" in json_path:
-            json_base = os.path.splitext(os.path.basename(json_path))[0]
-            final_html_path = os.path.join(results_dir, f"{json_base}.html")
+    if html_path:
+        if os.path.basename(html_path) == "analysis_report.html":
+            if "nikui_results" in json_path:
+                json_base = os.path.splitext(os.path.basename(json_path))[0]
+                final_html_path = os.path.join(results_dir, f"{json_base}.html")
+            else:
+                repo_name = os.path.basename(os.path.abspath(repo_path)) or "repo"
+                timestamp = time.strftime("%Y%m%d_%H%M")
+                final_html_path = os.path.join(results_dir, f"{repo_name}_{timestamp}.html")
         else:
-            repo_name = os.path.basename(os.path.abspath(repo_path)) or "repo"
-            timestamp = time.strftime("%Y%m%d_%H%M")
-            final_html_path = os.path.join(results_dir, f"{repo_name}_{timestamp}.html")
-    else:
-        final_html_path = html_path
+            final_html_path = html_path
 
-    reporter = HtmlReporter(config)
-    reporter.render(sorted_files, findings, final_html_path)
+        reporter = HtmlReporter(config)
+        reporter.render(sorted_files, findings, final_html_path)
+        print(f"HTML Report generated: {final_html_path}")
 
-    print(f"Report generated: {final_html_path} ({len(findings)} total findings)")
+    if markdown_path:
+        md_reporter = MarkdownReporter(config)
+        md_reporter.render(sorted_files, findings, markdown_path)
+        print(f"Markdown Summary generated: {markdown_path}")
+
+    print(f"Total findings: {len(findings)}")
     os.chdir(orig_cwd)
 
 
@@ -229,14 +276,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("repo_path")
     parser.add_argument("--json", default="analysis_report.json")
-    parser.add_argument("--html", default="analysis_report.html")
+    parser.add_argument("--html", default=None)
+    parser.add_argument("--markdown", default=None)
     parser.add_argument("--config", default="config.json")
     args = parser.parse_args()
     generate_reports(
         args.repo_path,
         os.path.abspath(args.json),
-        os.path.abspath(args.html),
+        os.path.abspath(args.html) if args.html else None,
         os.path.abspath(args.config),
+        markdown_path=os.path.abspath(args.markdown) if args.markdown else None
     )
 
 

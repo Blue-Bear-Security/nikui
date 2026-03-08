@@ -51,11 +51,17 @@ jobs:
             exit 1
           fi
 
-      - name: Generate HTML Report (Artifact)
+      - name: Generate Summary Report
+        if: always()
+        run: |
+          uv run python -m nikui.nikui report . --json nikui_results/pr_report.json --markdown nikui_summary.md
+          cat nikui_summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate Full HTML Report (Artifact)
         if: always()
         run: uv run python -m nikui.nikui report . --json nikui_results/pr_report.json --html nikui_report.html
 
-      - name: Upload Report
+      - name: Upload Full Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
