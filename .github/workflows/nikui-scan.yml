@@ -1,0 +1,63 @@
+name: Nikui Stench Guard
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to get git history for --diff
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install Nikui
+        run: uv sync
+
+      - name: Restore Fingerprint Cache
+        uses: actions/cache@v4
+        with:
+          path: .nikui/fingerprints.json
+          key: nikui-fingerprints-${{ github.event.repository.name }}
+
+      - name: Run Nikui (Diff Mode)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Use GPT-4o-mini for fast, high-quality CI scans
+          # Ensure your .nikui/config.json points to OpenAI or use env overrides
+          uv run nikui smell . --diff origin/main --output nikui_results/pr_report.json
+
+      - name: Check for New Debt
+        run: |
+          FINDINGS_COUNT=$(jq '. | length' nikui_results/pr_report.json)
+          HIGH_SEVERITY=$(jq '[.[] | select(.severity == "High")] | length' nikui_results/pr_report.json)
+          
+          echo "Found $FINDINGS_COUNT issues in this PR."
+          echo "High severity issues: $HIGH_SEVERITY"
+          
+          if [ "$HIGH_SEVERITY" -gt 0 ]; then
+            echo "::error::Nikui detected $HIGH_SEVERITY high-severity debt issues introduced in this PR."
+            exit 1
+          fi
+
+      - name: Generate HTML Report (Artifact)
+        if: always()
+        run: uv run nikui report . --json nikui_results/pr_report.json --html nikui_report.html
+
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nikui-report
+          path: nikui_report.html
