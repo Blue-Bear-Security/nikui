@@ -132,6 +132,15 @@ uv run nikui report <repo_path> --json nikui_results/my_scan.json --html report.
 - **`nikui/prompts/`** — LLM rubrics for smell detection and duplication verification
 - **`nikui_results/`** — all scans and reports saved automatically with timestamps
 
+## Prior Art & References
+
+Nikui is built on the shoulders of giants in the software forensics and maintainability space:
+
+- **Hotspot Analysis:** Based on [Adam Tornhill's](https://adamtornhill.com/) work in *"Your Code as a Crime Scene"*, specifically the methodology of combining logical coupling (churn) with technical debt (stench) to identify high-risk areas.
+- **Code Smells:** Inspired by [Michael Feathers](https://michaelfeathers.silvrback.com/) (*"Working Effectively with Legacy Code"*) and [Robert C. Martin](http://cleancoder.com/) (*"Clean Code"*).
+- **Structural Duplication:** Utilizes the [Simhash](https://en.wikipedia.org/wiki/SimHash) algorithm (Charikar, 2002) for high-performance near-duplicate detection, verified via LLM semantic analysis.
+- **Static Analysis:** Powered by [Semgrep](https://semgrep.dev/) for security-focused pattern matching.
+
 ## Contributing
 
 Contributions are welcome. To get started:
