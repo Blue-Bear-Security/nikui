@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-nikui = "nikui.nikui:main"
+nikui = "nikui.cli:main"
 
 [tool.uv]
 package = true

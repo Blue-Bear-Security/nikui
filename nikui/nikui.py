@@ -40,38 +40,7 @@ def get_modified_files(base):
         return None
 
 
-def main():
-    parser = argparse.ArgumentParser(prog="nikui")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # Smell command
-    smell_parser = subparsers.add_parser("smell")
-    smell_parser.add_argument("repo_path")
-    smell_parser.add_argument("--config", default=".nikui/config.json")
-    smell_parser.add_argument("--output", default="analysis_report.json")
-    smell_parser.add_argument("--diff", help="Only scan files changed since this branch/commit (e.g. origin/main)")
-    smell_parser.add_argument(
-        "--stages",
-        nargs="+",
-        choices=["ollama", "semgrep", "metrics", "duplication", "dependency"],
-        default=["ollama", "semgrep", "metrics", "duplication", "dependency"],
-    )
-
-    # Report command
-    report_parser = subparsers.add_parser("report")
-    report_parser.add_argument("repo_path")
-    report_parser.add_argument("--json")
-    report_parser.add_argument("--html", default=None)
-    report_parser.add_argument("--markdown", default=None)
-    report_parser.add_argument("--config", default=".nikui/config.json")
-
-    args = parser.parse_args()
-
-    if args.command == "report":
-        from nikui.generate_report import generate_reports
-        generate_reports(args.repo_path, json_path=args.json, html_path=args.html, config_path=args.config, markdown_path=args.markdown)
-        return
-
+def main(args):
     # 'smell' command logic
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir)
@@ -128,8 +97,6 @@ def main():
 
     # Stage 2: Semgrep
     if "semgrep" in args.stages:
-        # Note: SemgrepEngine currently scans the whole dir. 
-        # We'll pass the files_to_scan to it if possible.
         semgrep = SemgrepEngine(config, script_dir)
         all_findings.extend(semgrep.run_stage(temp_dir, files_to_scan if modified_files else None))
 
@@ -146,8 +113,6 @@ def main():
     # Stage 5: Dependency
     if "dependency" in args.stages:
         dependency = DependencyEngine(config)
-        # Dependency usually needs all files to build the graph, 
-        # but we might want to filter results to modified files only.
         results = dependency.run_stage(eligible_files)
         if modified_files is not None:
             results = [r for r in results if r["file_path"] in modified_files]
@@ -166,13 +131,11 @@ def main():
             nikui_results_dir, f"{repo_name}_{timestamp}.json"
         )
     else:
-        # If output path is provided, ensure it's relative to the project root or absolute
         if os.path.isabs(args.output):
             final_output_path = args.output
         else:
             final_output_path = os.path.abspath(os.path.join(project_root, args.output))
 
-    # Ensure parent directory of final_output_path exists
     os.makedirs(os.path.dirname(final_output_path), exist_ok=True)
 
     with open(final_output_path, "w", encoding="utf-8") as f:

@@ -36,7 +36,7 @@ jobs:
         run: |
           # Use GPT-4o-mini for fast, high-quality CI scans
           # Ensure your .nikui/config.json points to OpenAI or use env overrides
-          uv run python -m nikui.nikui smell . --diff origin/main --output nikui_results/pr_report.json
+          uv run nikui smell . --diff origin/main --output nikui_results/pr_report.json
 
       - name: Check for New Debt
         run: |
@@ -54,12 +54,12 @@ jobs:
       - name: Generate Summary Report
         if: always()
         run: |
-          uv run python -m nikui.nikui report . --json nikui_results/pr_report.json --markdown nikui_summary.md
+          uv run nikui report . --json nikui_results/pr_report.json --markdown nikui_summary.md
           cat nikui_summary.md >> $GITHUB_STEP_SUMMARY
 
       - name: Generate Full HTML Report (Artifact)
         if: always()
-        run: uv run python -m nikui.nikui report . --json nikui_results/pr_report.json --html nikui_report.html
+        run: uv run nikui report . --json nikui_results/pr_report.json --html nikui_report.html
 
       - name: Upload Full Report
         if: always()
