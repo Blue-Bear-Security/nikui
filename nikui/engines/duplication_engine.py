@@ -59,9 +59,10 @@ class DuplicationEngine:
         # Convert Simhash objects to hex strings for JSON
         serializable = []
         for b in blocks:
+            # Create a shallow copy to avoid modifying the in-memory object needed for verification
             b_copy = b.copy()
             b_copy["hash"] = hex(b["hash"].value)
-            # Remove content from persistent DB to keep it small, but keep name/file/line
+            # Remove content from persistent DB to keep it small
             b_copy.pop("content", None)
             serializable.append(b_copy)
 
@@ -175,6 +176,19 @@ class DuplicationEngine:
 
         return records
 
+    def _get_block_content_from_file(self, block):
+        """Lazy loads content for a block from its source file."""
+        try:
+            with open(block["file"], "r", encoding="utf-8", errors="ignore") as f:
+                lines = f.readlines()
+                # Use 0-based indexing for lines
+                start = block["lineno"] - 1
+                end = start + block["source_lines"]
+                return "".join(lines[start:end])
+        except Exception as e:
+            print(f"Warning: Could not lazy-load content for {block['file']}: {e}", file=sys.stderr)
+            return ""
+
     def run_stage(self, eligible_files, ollama=None, modified_files=None):
         print(
             "\n--- [Stage 4/5] Multi-Language Duplication Analysis ---", file=sys.stderr
@@ -268,11 +282,20 @@ class DuplicationEngine:
                 # Pick first two blocks to verify
                 blk_a = group["blocks"][0]
                 blk_b = group["blocks"][1]
-                is_duplicate, reason = ollama.verify_duplication(
-                    blk_a["file"], blk_a["content"], blk_b["file"], blk_b["content"]
-                )
-                if is_duplicate:
-                    group["reason"] = reason
+                
+                # Lazy load content if missing (happens for cached blocks)
+                content_a = blk_a.get("content") or self._get_block_content_from_file(blk_a)
+                content_b = blk_b.get("content") or self._get_block_content_from_file(blk_b)
+
+                if content_a and content_b:
+                    is_duplicate, reason = ollama.verify_duplication(
+                        blk_a["file"], content_a, blk_b["file"], content_b
+                    )
+                    if is_duplicate:
+                        group["reason"] = reason
+                        final_groups.append(group)
+                else:
+                    # Could not load content, trust Simhash
                     final_groups.append(group)
             else:
                 # No LLM, trust Simhash
