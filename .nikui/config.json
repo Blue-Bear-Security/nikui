@@ -1,7 +1,7 @@
 {
   "exclusions": {
     "patterns": ["*/tests/*", "*/test/*", "test_*.py", "*.test.js", "*.test.ts", "*.test.tsx", "*_test.go"],
-    "directories": ["node_modules", ".git", ".venv", "venv", "dist", "build", "tests", "test", "__pycache__", ".next"]
+    "directories": ["node_modules", ".git", ".venv", "venv", "dist", "build", "tests", "test", "__pycache__", ".next", "examples"]
   },
   "ollama": {
     "base_url": "https://api.openai.com/v1",
