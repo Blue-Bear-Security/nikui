@@ -58,7 +58,7 @@ class SemgrepEngine:
             )
         return findings
 
-    def run_stage(self, temp_dir):
+    def run_stage(self, temp_dir, files_to_scan=None):
         print(
             "\n--- [Stage 2/5] Security & Best Practices Scan (Semgrep) ---",
             file=sys.stderr,
@@ -69,8 +69,10 @@ class SemgrepEngine:
             [f"--exclude {d}/" for d in self.config["exclusions"]["directories"]]
         )
 
+        target = " ".join([shlex.quote(f) for f in files_to_scan]) if files_to_scan else "."
+        
         command = (
-            f"semgrep scan {configs} {excludes} --json > {shlex.quote(output_file)}"
+            f"semgrep scan {configs} {excludes} --json {target} > {shlex.quote(output_file)}"
         )
         try:
             subprocess.run(

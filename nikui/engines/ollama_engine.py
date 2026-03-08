@@ -201,15 +201,24 @@ class OllamaEngine:
             print("⚠️  LLM service not running. Skipping stage.", file=sys.stderr)
             return []
 
-        sample_size = (
-            max(1, int(len(eligible_files) * self.sampling_rate))
-            if eligible_files
-            else 0
-        )
-        sampled_files = random.sample(eligible_files, sample_size)
+        # If there are few files (likely a PR diff), scan all of them.
+        # Otherwise, respect the sampling rate.
+        if len(eligible_files) <= 10:
+            sampled_files = eligible_files
+            sample_size = len(eligible_files)
+        else:
+            sample_size = (
+                max(1, int(len(eligible_files) * self.sampling_rate))
+                if eligible_files
+                else 0
+            )
+            sampled_files = random.sample(eligible_files, sample_size)
+
+        if sample_size == 0:
+            return []
 
         print(
-            f"Analyzing {sample_size} files ({self.sampling_rate*100}% sample of {len(eligible_files)} total)...",
+            f"Analyzing {sample_size} files (Sample of {len(eligible_files)} total)...",
             file=sys.stderr,
         )
 

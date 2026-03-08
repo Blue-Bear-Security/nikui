@@ -108,15 +108,26 @@ uv run nikui smell <repo_path>
 # Targeted scan (specific engines only)
 uv run nikui smell <repo_path> --stages duplication semgrep
 
+# Diff mode: Analyze only changed files since a base branch (CI optimization)
+uv run nikui smell <repo_path> --diff origin/main
+
 # Save to a specific output file
 uv run nikui smell <repo_path> --output my_scan.json
 
 # Generate HTML report from the latest scan
 uv run nikui report <repo_path>
-
-# Generate from a specific JSON file
-uv run nikui report <repo_path> --json nikui_results/my_scan.json --html report.html
 ```
+
+## GitHub Action & CI/CD: The "Stench Guard"
+
+Nikui is designed for CI/CD with its **Diff-Aware** scanning mode. Instead of scanning the entire repo on every PR, Nikui can focus exclusively on the delta.
+
+### Key CI Features:
+- **`--diff <base>`**: Only runs semantic, security, and metric analysis on modified files.
+- **Stateful Duplication**: Caches Simhashes in `.nikui/fingerprints.json` to detect if new code is a clone of existing code without re-indexing the whole repo.
+- **Delta Prioritization**: Focuses LLM reasoning on changed code to keep CI fast and costs low.
+
+See [**`examples/nikui_gh_action.yml`**](examples/nikui_gh_action.yml) for a production-ready GitHub Action template.
 
 ## How It Works: The Hotspot Matrix
 

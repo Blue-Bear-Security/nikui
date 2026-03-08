@@ -2,6 +2,7 @@ import os
 import sys
 import re
 import ast
+import json
 import warnings
 from itertools import combinations
 from simhash import Simhash
@@ -30,6 +31,7 @@ class DuplicationEngine:
         self.threshold = config.get("duplication", {}).get("threshold", 0.85)
         self.min_lines = config.get("duplication", {}).get("min_lines", 6)
         self.supported_exts = [".py", ".go", ".ts", ".tsx", ".js"]
+        self.db_path = os.path.join(".nikui", "fingerprints.json")
 
     def _get_fingerprint(self, text):
         shingle_size = 4
@@ -38,6 +40,33 @@ class DuplicationEngine:
             for i in range(max(1, len(text) - shingle_size + 1))
         ]
         return Simhash(grams)
+
+    def load_fingerprints(self):
+        if os.path.exists(self.db_path):
+            try:
+                with open(self.db_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    # Convert hex strings back to Simhash objects
+                    for block in data.get("blocks", []):
+                        block["hash"] = Simhash(int(block["hash"], 16))
+                    return data.get("blocks", [])
+            except Exception as e:
+                print(f"Warning: Could not load fingerprints: {e}", file=sys.stderr)
+        return []
+
+    def save_fingerprints(self, blocks):
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        # Convert Simhash objects to hex strings for JSON
+        serializable = []
+        for b in blocks:
+            b_copy = b.copy()
+            b_copy["hash"] = hex(b["hash"].value)
+            # Remove content from persistent DB to keep it small, but keep name/file/line
+            b_copy.pop("content", None)
+            serializable.append(b_copy)
+
+        with open(self.db_path, "w", encoding="utf-8") as f:
+            json.dump({"version": "1.0", "blocks": serializable}, f, indent=2)
 
     def extract_blocks(self, file_path):
         """Extracts significant code blocks (functions/classes) from a file."""
@@ -146,61 +175,84 @@ class DuplicationEngine:
 
         return records
 
-    def run_stage(self, eligible_files, ollama=None):
+    def run_stage(self, eligible_files, ollama=None, modified_files=None):
         print(
             "\n--- [Stage 4/5] Multi-Language Duplication Analysis ---", file=sys.stderr
         )
-        all_blocks = []
+        
+        # 1. Load existing fingerprints
+        existing_blocks = self.load_fingerprints()
+        
+        # 2. Determine which files need re-indexing
+        # If modified_files is provided, we only index those. 
+        # Otherwise, index all eligible_files (standard full scan).
+        files_to_index = modified_files if modified_files is not None else eligible_files
+        
+        # Remove old blocks for files we are about to re-index
+        if files_to_index:
+            existing_blocks = [b for b in existing_blocks if b["file"] not in files_to_index]
 
-        total = len(eligible_files)
-        print(f"Scanning {total} files for duplicates...", file=sys.stderr)
+        # 3. Index new/modified files
+        all_blocks = existing_blocks
+        new_blocks = []
+        total = len(files_to_index)
+        if total > 0:
+            print(f"Indexing {total} modified files...", file=sys.stderr)
+            for i, path in enumerate(files_to_index):
+                if i % 50 == 0 or i == total - 1:
+                    sys.stderr.write(f"\rProgress: [{i+1}/{total}] files indexed...")
+                    sys.stderr.flush()
+                new_blocks.extend(self.extract_blocks(path))
+            print("", file=sys.stderr)
 
-        for i, path in enumerate(eligible_files):
-            if i % 50 == 0 or i == total - 1:
-                sys.stderr.write(f"\rProgress: [{i+1}/{total}] files indexed...")
-                sys.stderr.flush()
-
-            all_blocks.extend(self.extract_blocks(path))
+        all_blocks.extend(new_blocks)
+        
+        # 4. Save updated fingerprints for next time
+        self.save_fingerprints(all_blocks)
 
         print(
-            f"\nIndexed {len(all_blocks)} code blocks. Finding candidates...",
+            f"Comparing {len(new_blocks) if modified_files else len(all_blocks)} blocks against {len(all_blocks)} total index...",
             file=sys.stderr,
         )
 
         candidates = []
         seen = set()
 
-        for i, j in combinations(range(len(all_blocks)), 2):
-            if i in seen and j in seen:
-                continue
-            a, b = all_blocks[i], all_blocks[j]
+        # If we have modified_files, we only need to compare new_blocks vs all_blocks
+        # If not, it's a full O(N^2) of all_blocks vs all_blocks
+        if modified_files is not None:
+            # Incremental Compare: New Blocks vs Everything
+            for i, a in enumerate(new_blocks):
+                for j, b in enumerate(all_blocks):
+                    # Skip same block or very close blocks in same file
+                    if a["file"] == b["file"] and abs(a["lineno"] - b["lineno"]) < 5:
+                        continue
+                    
+                    dist = a["hash"].distance(b["hash"])
+                    sim = 1.0 - dist / 64
 
-            if a["file"] == b["file"] and abs(a["lineno"] - b["lineno"]) < 5:
-                continue
-
-            dist = a["hash"].distance(b["hash"])
-            sim = 1.0 - dist / 64
-
-            if sim >= self.threshold:
-                existing = next(
-                    (
-                        g
-                        for g in candidates
-                        if any(
-                            id(blk) == id(a) or id(blk) == id(b) for blk in g["blocks"]
-                        )
-                    ),
-                    None,
-                )
-                if existing:
-                    for blk in (a, b):
-                        if not any(id(x) == id(blk) for x in existing["blocks"]):
-                            existing["blocks"].append(blk)
-                    existing["similarity"] = min(existing["similarity"], sim)
-                else:
+                    if sim >= self.threshold:
+                        existing = next((g for g in candidates if any(id(blk) == id(a) or id(blk) == id(b) for blk in g["blocks"])), None)
+                        if existing:
+                            for blk in (a, b):
+                                if not any(id(x) == id(blk) for x in existing["blocks"]):
+                                    existing["blocks"].append(blk)
+                            existing["similarity"] = min(existing["similarity"], sim)
+                        else:
+                            candidates.append({"similarity": sim, "blocks": [a, b]})
+        else:
+            # Standard Full Compare: O(N^2)
+            for i, j in combinations(range(len(all_blocks)), 2):
+                a, b = all_blocks[i], all_blocks[j]
+                if a["file"] == b["file"] and abs(a["lineno"] - b["lineno"]) < 5:
+                    continue
+                dist = a["hash"].distance(b["hash"])
+                sim = 1.0 - dist / 64
+                if sim >= self.threshold:
                     candidates.append({"similarity": sim, "blocks": [a, b]})
-                seen.add(i)
-                seen.add(j)
+
+        if not candidates:
+            return []
 
         print(
             f"Found {len(candidates)} candidate groups. Verifying with LLM...",
