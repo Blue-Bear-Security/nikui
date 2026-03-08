@@ -164,20 +164,26 @@ def main():
         all_findings.extend(results)
 
     # Ensure nikui_results directory exists
-
     nikui_results_dir = os.path.join(os.getcwd(), "nikui_results")
     os.makedirs(nikui_results_dir, exist_ok=True)
 
     repo_name = os.path.basename(os.path.abspath(args.repo_path)) or "repo"
     timestamp = time.strftime("%Y%m%d_%H%M")
 
-    # Default output path if none provided
+    # Determine final output path
     if args.output == "analysis_report.json":
         final_output_path = os.path.join(
             nikui_results_dir, f"{repo_name}_{timestamp}.json"
         )
     else:
-        final_output_path = os.path.abspath(os.path.join(project_root, args.output))
+        # If output path is provided, ensure it's relative to the project root or absolute
+        if os.path.isabs(args.output):
+            final_output_path = args.output
+        else:
+            final_output_path = os.path.abspath(os.path.join(project_root, args.output))
+
+    # Ensure parent directory of final_output_path exists
+    os.makedirs(os.path.dirname(final_output_path), exist_ok=True)
 
     with open(final_output_path, "w", encoding="utf-8") as f:
         json.dump(all_findings, f, indent=2)
