@@ -12,15 +12,14 @@ from nikui.utils import is_excluded
 def get_git_metadata(file_path):
     """Fetches commit count and last modification time from Git."""
     try:
-        quoted_path = shlex.quote(file_path)
-        commit_count_cmd = f"git rev-list --count HEAD -- {quoted_path}"
-        last_mod_cmd = f"git log -1 --format=%ct -- {quoted_path}"
+        commit_count_cmd = ["git", "rev-list", "--count", "HEAD", "--", file_path]
+        last_mod_cmd = ["git", "log", "-1", "--format=%ct", "--", file_path]
 
         commit_count = int(
-            subprocess.check_output(commit_count_cmd, shell=True).decode().strip()
+            subprocess.check_output(commit_count_cmd).decode().strip()
         )
         last_mod = int(
-            subprocess.check_output(last_mod_cmd, shell=True).decode().strip()
+            subprocess.check_output(last_mod_cmd).decode().strip()
         )
         return commit_count, last_mod
     except Exception as e:

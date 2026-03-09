@@ -63,20 +63,28 @@ class SemgrepEngine:
             "\n--- [Stage 2/5] Security & Best Practices Scan (Semgrep) ---",
             file=sys.stderr,
         )
-        output_file = os.path.join(temp_dir, "semgrep.json")
-        configs = " ".join([f"--config {c}" for c in self.config["semgrep"]["configs"]])
-        excludes = " ".join(
-            [f"--exclude {d}/" for d in self.config["exclusions"]["directories"]]
-        )
-
-        target = " ".join([shlex.quote(f) for f in files_to_scan]) if files_to_scan else "."
+        output_file = os.path.abspath(os.path.join(temp_dir, "semgrep.json"))
         
-        command = (
-            f"semgrep scan {configs} {excludes} --json {target} > {shlex.quote(output_file)}"
-        )
+        # Build command list
+        cmd = ["semgrep", "scan", "--json", "-o", output_file]
+        
+        # Add configs
+        for c in self.config.get("semgrep", {}).get("configs", []):
+            cmd.extend(["--config", c])
+            
+        # Add excludes
+        for d in self.config.get("exclusions", {}).get("directories", []):
+            cmd.extend(["--exclude", f"{d}/"])
+            
+        # Add targets
+        if files_to_scan:
+            cmd.extend(files_to_scan)
+        else:
+            cmd.append(".")
+
         try:
             subprocess.run(
-                command, shell=True, check=False, capture_output=True, text=True
+                cmd, check=False, capture_output=True, text=True
             )
             if os.path.exists(output_file):
                 with open(output_file, "r", encoding="utf-8") as f:

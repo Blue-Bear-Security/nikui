@@ -8,11 +8,11 @@ from nikui.utils import is_excluded
 
 class CommandRunner:
     @staticmethod
-    def run(command):
+    def run(cmd_list):
         try:
             result = subprocess.run(
-                command,
-                shell=True,
+                cmd_list,
+                shell=False,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -20,7 +20,7 @@ class CommandRunner:
             )
             return result.stdout, result.stderr
         except Exception as e:
-            print(f"Error running command {command}: {e}", file=sys.stderr)
+            print(f"Error running command {' '.join(cmd_list)}: {e}", file=sys.stderr)
             return "", str(e)
 
 
@@ -208,9 +208,11 @@ class MetricsEngine:
         py_files = [f for f in eligible_files if f.endswith(".py")]
         if py_files:
             ignore_list = ",".join(self.config.get("flake8", {}).get("ignore", []))
-            ignore_arg = f"--ignore={ignore_list}" if ignore_list else ""
-            files_arg = " ".join(py_files)
-            flake8_cmd = f"flake8 --max-complexity=10 {ignore_arg} {files_arg}"
+            flake8_cmd = ["flake8", "--max-complexity=10"]
+            if ignore_list:
+                flake8_cmd.append(f"--ignore={ignore_list}")
+            flake8_cmd.extend(py_files)
+            
             stdout, _ = CommandRunner.run(flake8_cmd)
             all_findings.extend(self.flake8_parser.parse(stdout))
 
