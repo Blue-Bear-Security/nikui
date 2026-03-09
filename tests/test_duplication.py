@@ -4,10 +4,15 @@ from nikui.engines.duplication_engine import DuplicationEngine
 
 
 @pytest.fixture
-def duplication_engine():
+def duplication_engine(tmp_path):
+    db_file = tmp_path / "test_duplication_fingerprints.json"
     config = {
         "exclusions": {"directories": [], "patterns": []},
-        "duplication": {"threshold": 0.80, "min_lines": 3},
+        "duplication": {
+            "threshold": 0.80, 
+            "min_lines": 3,
+            "db_path": str(db_file)
+        },
     }
     return DuplicationEngine(config)
 
