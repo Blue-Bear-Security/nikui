@@ -114,7 +114,7 @@ uv run nikui smell <repo_path> --diff origin/main
 # Save to a specific output file
 uv run nikui smell <repo_path> --output my_scan.json
 
-# Generate HTML report from the latest scan
+# Generate HTML report (automatically finds and processes the latest scan)
 uv run nikui report <repo_path>
 ```
 
