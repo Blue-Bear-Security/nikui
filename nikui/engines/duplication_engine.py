@@ -274,11 +274,14 @@ class DuplicationEngine:
         )
 
         final_groups = []
+        # Check LLM status once before the loop
+        llm_active = ollama.client.is_running() if ollama else False
+        
         for idx, group in enumerate(candidates):
             sys.stderr.write(f"\rVerifying: [{idx+1}/{len(candidates)}] groups...")
             sys.stderr.flush()
 
-            if ollama and ollama.client.is_running():
+            if llm_active:
                 # Pick first two blocks to verify
                 blk_a = group["blocks"][0]
                 blk_b = group["blocks"][1]
@@ -295,8 +298,8 @@ class DuplicationEngine:
                         group["reason"] = reason
                         final_groups.append(group)
                 else:
-                    # Could not load content, trust Simhash
-                    final_groups.append(group)
+                    # If file is missing locally, it's stale cache data. Skip it.
+                    continue
             else:
                 # No LLM, trust Simhash
                 final_groups.append(group)

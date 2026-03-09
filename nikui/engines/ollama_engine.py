@@ -168,8 +168,24 @@ class OllamaEngine:
         try:
             file_findings = json.loads(text)
         except json.JSONDecodeError as e:
-            print(f"Error parsing LLM JSON for {file_path}: {e}", file=sys.stderr)
-            return []
+            # Attempt a "Relaxed" parse: try to fix common LLM JSON errors
+            # Like missing commas between objects: } { -> }, {
+            try:
+                fixed = re.sub(r"\}\s*\{", "}, {", text)
+                if not fixed.strip().startswith("["):
+                    fixed = "[" + fixed + "]"
+                file_findings = json.loads(fixed)
+            except Exception:
+                # Last resort: extract everything between [ ]
+                try:
+                    match = re.search(r"\[.*\]", text, re.DOTALL)
+                    if match:
+                        file_findings = json.loads(match.group(0))
+                    else:
+                        raise e
+                except Exception:
+                    print(f"Error parsing LLM JSON for {file_path}: {e}", file=sys.stderr)
+                    return []
 
         if not isinstance(file_findings, list):
             print(f"Warning: LLM output for {file_path} is not a JSON array", file=sys.stderr)
