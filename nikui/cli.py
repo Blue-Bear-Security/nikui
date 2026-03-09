@@ -38,9 +38,9 @@ def main():
     elif args.command == "report":
         # Search for latest JSON if not provided
         json_input = args.json
+        results_dir = os.path.join(args.repo_path, "nikui_results")
         if not json_input:
             import glob
-            results_dir = os.path.join(args.repo_path, "nikui_results")
             if os.path.exists(results_dir):
                 files = glob.glob(os.path.join(results_dir, "*.json"))
                 if files:
@@ -50,10 +50,17 @@ def main():
             print("Error: No JSON findings file found. Run 'nikui smell' first or provide --json.")
             sys.exit(1)
 
+        # Default HTML output if none provided
+        html_output = args.html
+        if not html_output:
+            json_filename = os.path.basename(json_input)
+            html_filename = os.path.splitext(json_filename)[0] + ".html"
+            html_output = os.path.join(results_dir, html_filename)
+
         generate_reports(
             args.repo_path,
             json_path=os.path.abspath(json_input),
-            html_path=os.path.abspath(args.html) if args.html else None,
+            html_path=os.path.abspath(html_output),
             config_path=os.path.abspath(args.config),
             markdown_path=os.path.abspath(args.markdown) if args.markdown else None
         )
