@@ -28,8 +28,8 @@ class UniversalNormalizer:
 class DuplicationEngine:
     def __init__(self, config):
         self.config = config
-        self.threshold = config.get("duplication", {}).get("threshold", 0.85)
-        self.min_lines = config.get("duplication", {}).get("min_lines", 6)
+        self.threshold = config.get("duplication", {}).get("threshold", 0.90)
+        self.min_lines = config.get("duplication", {}).get("min_lines", 10)
         self.supported_exts = [".py", ".go", ".ts", ".tsx", ".js"]
         self.db_path = config.get("duplication", {}).get("db_path") or os.path.join(".nikui", "fingerprints.json")
 
@@ -242,6 +242,10 @@ class DuplicationEngine:
                     if a["file"] == b["file"] and abs(a["lineno"] - b["lineno"]) < 5:
                         continue
                     
+                    # Only compare within the same language (extension)
+                    if os.path.splitext(a["file"])[1] != os.path.splitext(b["file"])[1]:
+                        continue
+                    
                     dist = a["hash"].distance(b["hash"])
                     sim = 1.0 - dist / 64
 
@@ -260,6 +264,11 @@ class DuplicationEngine:
                 a, b = all_blocks[i], all_blocks[j]
                 if a["file"] == b["file"] and abs(a["lineno"] - b["lineno"]) < 5:
                     continue
+                
+                # Only compare within the same language (extension)
+                if os.path.splitext(a["file"])[1] != os.path.splitext(b["file"])[1]:
+                    continue
+
                 dist = a["hash"].distance(b["hash"])
                 sim = 1.0 - dist / 64
                 if sim >= self.threshold:
