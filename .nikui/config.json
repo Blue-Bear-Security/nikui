@@ -16,7 +16,7 @@
     "ignore": ["E501", "W293", "W291"]
   },
   "duplication": {
-    "threshold": 0.85,
+    "threshold": 0.92,
     "min_lines": 12
   },
   "stench_weights": {
