@@ -56,10 +56,15 @@ def metrics_engine():
 
 
 @pytest.fixture
-def duplication_engine():
+def duplication_engine(tmp_path):
+    db_file = tmp_path / "test_fingerprints.json"
     config = {
         "exclusions": {"directories": [], "patterns": []},
-        "duplication": {"threshold": 0.85, "min_lines": 3},
+        "duplication": {
+            "threshold": 0.85,
+            "min_lines": 3,
+            "db_path": str(db_file)
+        },
     }
     return DuplicationEngine(config)
 

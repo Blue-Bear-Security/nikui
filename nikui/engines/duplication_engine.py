@@ -31,7 +31,7 @@ class DuplicationEngine:
         self.threshold = config.get("duplication", {}).get("threshold", 0.85)
         self.min_lines = config.get("duplication", {}).get("min_lines", 6)
         self.supported_exts = [".py", ".go", ".ts", ".tsx", ".js"]
-        self.db_path = os.path.join(".nikui", "fingerprints.json")
+        self.db_path = config.get("duplication", {}).get("db_path") or os.path.join(".nikui", "fingerprints.json")
 
     def _get_fingerprint(self, text):
         shingle_size = 4
